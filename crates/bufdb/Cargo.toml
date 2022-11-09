@@ -1,0 +1,17 @@
+[package]
+name = "bufdb"
+version = "0.0.1"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Steven Lee <leexgone@163.com>"]
+description = "An in-memory buffer library."
+repository = "https://github.com/leexgone/bufdb"
+homepage = "https://github.com/leexgone"
+readme = "../../README.md"
+keywords = []
+categories = []
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
