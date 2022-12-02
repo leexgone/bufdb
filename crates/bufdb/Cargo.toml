@@ -2,7 +2,7 @@
 name = "bufdb"
 version = "0.0.1"
 edition = "2021"
-license = "Apache-2.0"
+license = "MIT"
 authors = ["Steven Lee <leexgone@163.com>"]
 description = "An in-memory buffer library."
 repository = "https://github.com/leexgone/bufdb"
