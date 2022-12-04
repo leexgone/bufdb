@@ -1,5 +1,6 @@
 pub mod instance;
 pub mod schema;
 pub mod table;
+pub mod cursor;
 pub mod record;
-pub mod datatype;
+pub mod model;
