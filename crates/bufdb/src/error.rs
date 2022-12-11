@@ -9,7 +9,9 @@ pub enum ErrorKind {
     #[fail(display = "Error Data Type")]
     ErrorType,
     #[fail(display = "Index out of bounds")]
-    OutOfBounds
+    OutOfBounds,
+    #[fail(display = "Null value")]
+    NullValue,
 }
 
 /// Defines error type for bufdb lib.
