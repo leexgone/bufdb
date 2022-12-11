@@ -5,13 +5,13 @@ use crate::error::Result;
 enum Value {
     #[default]
     NULL,
-    STRING(String),
+    STRING(Box<String>),
     DOUBLE(f64),
     INTEGER(i32),
     LONG(i64),
     DATETIME(u64),
     BOOLEAN(bool),
-    BLOB(Vec<u8>)
+    BLOB(Box<Vec<u8>>)
 }
 
 #[derive(Debug, Clone)]
@@ -48,5 +48,15 @@ impl Record {
         } else {
             Err(ErrorKind::OutOfBounds.into())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Value;
+
+    #[test]    
+    fn test_value_size() {
+        println!("Size of Value: {}", std::mem::size_of::<Value>())
     }
 }
