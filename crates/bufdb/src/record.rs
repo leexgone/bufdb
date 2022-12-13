@@ -56,46 +56,50 @@ impl Record {
         }
     }
 
-    pub fn get_str(&self, index: usize) -> Result<&str> {
+    fn get(&self, index: usize) -> Result<&Value> {
         if let Some(val) = self.values.get(index) {
-            match val {
-                Value::STRING(v) => Ok(v.as_ref()),
-                Value::NULL => Err(ErrorKind::NullValue.into()),
-                _ => Err(ErrorKind::ErrorType.into())
-            }
+            Ok(val)
         } else {
             Err(ErrorKind::OutOfBounds.into())
+        }
+    }
+
+    fn get_mut(&mut self, index: usize) -> Result<&mut Value> {
+        if let Some(val) = self.values.get_mut(index) {
+            Ok(val)
+        } else {
+            Err(ErrorKind::OutOfBounds.into())
+        }
+    }
+
+    pub fn get_str(&self, index: usize) -> Result<Option<&str>> {
+         let val = self.get(index)?;
+        match val {
+            Value::STRING(v) => Ok(Some(v.as_ref())),
+            Value::NULL => Ok(None),
+            _ => Err(ErrorKind::ErrorType.into())
         }
     }
 
     pub fn set_str(&mut self, index: usize, str: &str) -> Result<()> {
-        if let Some(val) = self.values.get_mut(index) {
-            *val = Value::STRING(Box::new(str.into()));
-            Ok(())
-        } else {
-            Err(ErrorKind::OutOfBounds.into())
-        }
+        let val = self.get_mut(index)?;
+        *val = Value::STRING(Box::new(str.into()));
+        Ok(())
     }
 
-    pub fn get_double(&self, index: usize) -> Result<f64> {
-        if let Some(val) = self.values.get(index) {
-            match val {
-                Value::DOUBLE(v) => Ok(*v),
-                Value::NULL => Err(ErrorKind::NullValue.into()),
-                _ => Err(ErrorKind::ErrorType.into())
-            }
-        } else {
-            Err(ErrorKind::OutOfBounds.into())
+    pub fn get_double(&self, index: usize) -> Result<Option<f64>> {
+        let val = self.get(index)?;
+        match val {
+            Value::DOUBLE(v) => Ok(Some(*v)),
+            Value::NULL => Ok(None),
+            _ => Err(ErrorKind::ErrorType.into())
         }
     }
 
     pub fn set_double(&mut self, index: usize, v: f64) -> Result<()> {
-        if let Some(val) = self.values.get_mut(index) {
-            *val = Value::DOUBLE(v);
-            Ok(())
-        } else {
-            Err(ErrorKind::OutOfBounds.into())
-        }
+        let val = self.get_mut(index)?;
+        *val = Value::DOUBLE(v);
+        Ok(())
     }
 
     pub fn get_int(&self, index: usize) -> Result<i32> {
@@ -113,6 +117,27 @@ impl Record {
     pub fn set_int(&mut self, index: usize, v: i32) -> Result<()> {
         if let Some(val) = self.values.get_mut(index) {
             *val = Value::INTEGER(v);
+            Ok(())
+        } else {
+            Err(ErrorKind::OutOfBounds.into())
+        }
+    }
+
+    pub fn get_long(&self, index: usize) -> Result<Option<i64>> {
+        if let Some(val) = self.values.get(index) {
+            match val {
+                Value::LONG(v) => Ok(Some(*v)),
+                Value::NULL => Ok(None),
+                _ => Err(ErrorKind::ErrorType.into())
+            }
+        } else {
+            Err(ErrorKind::OutOfBounds.into())
+        }
+    }
+
+    pub fn set_long(&mut self, index: usize, v: i64) -> Result<()> {
+        if let Some(val) = self.values.get_mut(index) {
+            *val = Value::LONG(v);
             Ok(())
         } else {
             Err(ErrorKind::OutOfBounds.into())
