@@ -65,6 +65,12 @@ impl From<bool> for Value {
     }
 }
 
+impl From<&[u8]> for Value {
+    fn from(val: &[u8]) -> Self {
+        Self::BLOB(Box::new(val.into()))
+    }
+}
+
 impl From<Vec<u8>> for Value {
     fn from(val: Vec<u8>) -> Self {
         Self::BLOB(Box::new(val))
@@ -153,11 +159,11 @@ impl Record {
         self.set_value(index, v)
     }
 
-    pub fn get_int(&self, index: usize) -> Result<i32> {
+    pub fn get_int(&self, index: usize) -> Result<Option<i32>> {
         let val = self.get(index)?;
         match val {
-            Value::INTEGER(v) => Ok(*v),
-            Value::NULL => Err(ErrorKind::NullValue.into()),
+            Value::INTEGER(v) => Ok(Some(*v)),
+            Value::NULL => Ok(None),
             _ => Err(ErrorKind::ErrorType.into())
         }
     }
@@ -202,6 +208,23 @@ impl Record {
     }
 
     pub fn set_bool(&mut self, index: usize, v: bool) -> Result<()> {
+        self.set_value(index, v)
+    }
+
+    pub fn get_blob(&self, index: usize) -> Result<Option<&[u8]>> {
+        let val = self.get(index)?;
+        match val {
+            Value::BLOB(v) => Ok(Some(v.as_ref())),
+            Value::NULL => Ok(None),
+            _ => Err(ErrorKind::ErrorType.into())
+        }
+    }
+
+    pub fn set_blob(&mut self, index: usize, v: &[u8]) -> Result<()> {
+        self.set_value(index, v)
+    }
+
+    pub fn set_blob_vec(&mut self, index: usize, v: Vec<u8>) -> Result<()> {
         self.set_value(index, v)
     }
 }
