@@ -1,14 +1,4 @@
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
-pub enum DataType {
-    #[default]
-    STRING = 1,
-    DOUBLE = 2,
-    INTEGER = 3,
-    LONG = 4,
-    DATETIME = 5,
-    BOOLEAN = 6,
-    BLOB = 7,
-}
+use crate::datatype::DataType;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub enum IndexType {

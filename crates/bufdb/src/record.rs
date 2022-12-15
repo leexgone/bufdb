@@ -231,10 +231,38 @@ impl Record {
 
 #[cfg(test)]
 mod tests {
+    use super::Record;
     use super::Value;
 
     #[test]    
     fn test_value_size() {
-        println!("Size of Value: {}", std::mem::size_of::<Value>());
+        assert_eq!(std::mem::size_of::<Value>(), 16);
+    }
+
+    #[test]
+    fn test_record_value() {
+        let mut record = Record::new(8);
+
+        let blob = vec![1u8, 2, 3];
+
+        record.set_null(0).unwrap();
+        record.set_str(1, "Hello").unwrap();
+        record.set_double(2, 3.14).unwrap();
+        record.set_int(3, 100).unwrap();
+        record.set_long(4, 10000).unwrap();
+        record.set_datetime(5, 123456789).unwrap();
+        record.set_bool(6, true).unwrap();
+        record.set_blob(7, blob.as_slice()).unwrap();
+
+        assert!(record.is_null(0).unwrap());
+        assert_eq!(None, record.get_int(0).unwrap());
+        assert_eq!(Some("Hello"), record.get_str(1).unwrap());
+        assert_eq!(Some(3.14), record.get_double(2).unwrap());
+        assert_eq!(Some(100), record.get_int(3).unwrap());
+        assert_eq!(Some(10000), record.get_long(4).unwrap());
+        assert_eq!(Some(123456789), record.get_datetime(5).unwrap());
+        assert_eq!(Some(true), record.get_bool(6).unwrap());
+        assert_eq!(Some(blob.as_slice()), record.get_blob(7).unwrap());
+        assert!(record.is_null(8).is_err());
     }
 }
