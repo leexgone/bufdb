@@ -4,14 +4,19 @@ use failure::Context;
 use failure::Fail;
 
 /// Enumerates error kinds.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Fail)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Fail, Default)]
 pub enum ErrorKind {
-    #[fail(display = "Error Data Type")]
+    #[default]
+    #[fail(display = "Unknown error")]
+    Unknown,
+    #[fail(display = "Error datatype")]
     ErrorType,
     #[fail(display = "Index out of bounds")]
     OutOfBounds,
     #[fail(display = "Null value")]
     NullValue,
+    #[fail(display = "Undefined expression")]
+    UndefinedExpr,
 }
 
 /// Defines error type for bufdb lib.

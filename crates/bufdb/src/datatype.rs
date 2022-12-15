@@ -1,27 +1,22 @@
-use std::fmt::Display;
+use strum::Display;
+use strum::EnumString;
+use strum::FromRepr;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, Display, EnumString, FromRepr)]
 pub enum DataType {
     #[default]
+    #[strum(serialize = "string")]
     STRING = 1,
+    #[strum(serialize = "double")]
     DOUBLE = 2,
-    INTEGER = 3,
+    #[strum(serialize = "int")]
+    INT = 3,
+    #[strum(serialize = "long")]
     LONG = 4,
+    #[strum(serialize = "datetime")]
     DATETIME = 5,
-    BOOLEAN = 6,
+    #[strum(serialize = "bool")]
+    BOOL = 6,
+    #[strum(serialize = "blob")]
     BLOB = 7,
-}
-
-impl Display for DataType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::STRING => f.write_str("string"),
-            Self::DOUBLE => f.write_str("double"),
-            Self::INTEGER => f.write_str("integer"),
-            Self::LONG => f.write_str("long"),
-            Self::DATETIME => f.write_str("datetime"),
-            Self::BOOLEAN => f.write_str("boolean"),
-            Self::BLOB => f.write_str("blob")
-        }
-    }
 }
