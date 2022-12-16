@@ -1,81 +1,7 @@
+use crate::datatype::TimeStamp;
+use crate::datatype::Value;
 use crate::error::ErrorKind;
 use crate::error::Result;
-
-/// Defines `TimeStamp` type to store datetime.
-pub type TimeStamp = u64;
-
-#[derive(Debug, Clone, PartialEq, Default)]
-enum Value {
-    #[default]
-    NULL,
-    STRING(Box<String>),
-    DOUBLE(f64),
-    INTEGER(i32),
-    LONG(i64),
-    DATETIME(TimeStamp),
-    BOOLEAN(bool),
-    BLOB(Box<Vec<u8>>)
-}
-
-impl Value {
-    fn is_null(&self) -> bool {
-        self == &Value::NULL
-    }
-}
-
-impl From<&str> for Value {
-    fn from(val: &str) -> Self {
-        Self::STRING(Box::new(val.into()))
-    }
-}
-
-impl From<String> for Value {
-    fn from(val: String) -> Self {
-        Self::STRING(Box::new(val))
-    }
-}
-
-impl From<f64> for Value {
-    fn from(val: f64) -> Self {
-        Self::DOUBLE(val)
-    }
-}
-
-impl From<i32> for Value {
-    fn from(val: i32) -> Self {
-        Self::INTEGER(val)
-    }
-}
-
-impl From<i64> for Value {
-    fn from(val: i64) -> Self {
-        Self::LONG(val)
-    }
-}
-
-impl From<TimeStamp> for Value {
-    fn from(val: TimeStamp) -> Self {
-        Self::DATETIME(val)
-    }
-}
-
-impl From<bool> for Value {
-    fn from(val: bool) -> Self {
-        Self::BOOLEAN(val)
-    }
-}
-
-impl From<&[u8]> for Value {
-    fn from(val: &[u8]) -> Self {
-        Self::BLOB(Box::new(val.into()))
-    }
-}
-
-impl From<Vec<u8>> for Value {
-    fn from(val: Vec<u8>) -> Self {
-        Self::BLOB(Box::new(val))
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Record {
@@ -162,7 +88,7 @@ impl Record {
     pub fn get_int(&self, index: usize) -> Result<Option<i32>> {
         let val = self.get(index)?;
         match val {
-            Value::INTEGER(v) => Ok(Some(*v)),
+            Value::INT(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
             _ => Err(ErrorKind::ErrorType.into())
         }
@@ -201,7 +127,7 @@ impl Record {
     pub fn get_bool(&self, index: usize) -> Result<Option<bool>> {
         let val = self.get(index)?;
         match val {
-            Value::BOOLEAN(v) => Ok(Some(*v)),
+            Value::BOOL(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
             _ => Err(ErrorKind::ErrorType.into())
         }
@@ -232,12 +158,6 @@ impl Record {
 #[cfg(test)]
 mod tests {
     use super::Record;
-    use super::Value;
-
-    #[test]    
-    fn test_value_size() {
-        assert_eq!(std::mem::size_of::<Value>(), 16);
-    }
 
     #[test]
     fn test_record_value() {

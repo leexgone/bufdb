@@ -17,6 +17,8 @@ pub enum ErrorKind {
     NullValue,
     #[fail(display = "Undefined expression")]
     UndefinedExpr,
+    #[fail(display = "Format error")]
+    FormatError(std::fmt::Error)
 }
 
 /// Defines error type for bufdb lib.
@@ -54,3 +56,9 @@ impl From<ErrorKind> for Error {
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
+
+impl From<std::fmt::Error> for Error {
+    fn from(err: std::fmt::Error) -> Self {
+        ErrorKind::FormatError(err).into()
+    }
+}
