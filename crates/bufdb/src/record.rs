@@ -1,3 +1,7 @@
+use std::ops::Index;
+use std::ops::IndexMut;
+
+use crate::datatype::ConvertTo;
 use crate::datatype::TimeStamp;
 use crate::datatype::Value;
 use crate::error::ErrorKind;
@@ -49,19 +53,24 @@ impl Record {
         Ok(())
     }
 
-    fn set_value<T>(&mut self, index: usize, v: T) -> Result<()> where T: Into<Value> {
+    pub fn set_value<T>(&mut self, index: usize, v: T) -> Result<()> where T: Into<Value> {
         let val = self.get_mut(index)?;
         *val = v.into();
         Ok(())
     }
 
     pub fn get_str(&self, index: usize) -> Result<Option<&str>> {
-         let val = self.get(index)?;
+        let val = self.get(index)?;
         match val {
             Value::STRING(v) => Ok(Some(v.as_ref())),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_string(&self, index: usize) -> Result<Option<String>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_str(&mut self, index: usize, str: &str) -> Result<()> {
@@ -77,8 +86,13 @@ impl Record {
         match val {
             Value::DOUBLE(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_double(&self, index: usize) -> Result<Option<f64>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_double(&mut self, index: usize, v: f64) -> Result<()> {
@@ -90,8 +104,13 @@ impl Record {
         match val {
             Value::INT(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_int(&self, index: usize) -> Result<Option<i32>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_int(&mut self, index: usize, v: i32) -> Result<()> {
@@ -103,8 +122,13 @@ impl Record {
         match val {
             Value::LONG(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_long(&self, index: usize) -> Result<Option<i64>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_long(&mut self, index: usize, v: i64) -> Result<()> {
@@ -116,8 +140,13 @@ impl Record {
         match val {
             Value::DATETIME(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_datetime(&self, index: usize) -> Result<Option<TimeStamp>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_datetime(&mut self, index: usize, v: TimeStamp) -> Result<()> {
@@ -129,8 +158,13 @@ impl Record {
         match val {
             Value::BOOL(v) => Ok(Some(*v)),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
+    }
+
+    pub fn as_bool(&self, index: usize) -> Result<Option<bool>> {
+        let val = self.get(index)?;
+        val.convert_to()
     }
 
     pub fn set_bool(&mut self, index: usize, v: bool) -> Result<()> {
@@ -142,7 +176,7 @@ impl Record {
         match val {
             Value::BLOB(v) => Ok(Some(v.as_ref())),
             Value::NULL => Ok(None),
-            _ => Err(ErrorKind::ErrorType.into())
+            _ => Err(ErrorKind::DataType.into())
         }
     }
 
@@ -152,6 +186,20 @@ impl Record {
 
     pub fn set_blob_vec(&mut self, index: usize, v: Vec<u8>) -> Result<()> {
         self.set_value(index, v)
+    }
+}
+
+impl Index<usize> for Record {
+    type Output = Value;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.values[index]
+    }
+}
+
+impl IndexMut<usize> for Record {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.values[index]
     }
 }
 

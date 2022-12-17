@@ -4,13 +4,13 @@ use failure::Context;
 use failure::Fail;
 
 /// Enumerates error kinds.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Fail, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Fail, Default)]
 pub enum ErrorKind {
     #[default]
     #[fail(display = "Unknown error")]
     Unknown,
     #[fail(display = "Error datatype")]
-    ErrorType,
+    DataType,
     #[fail(display = "Index out of bounds")]
     OutOfBounds,
     #[fail(display = "Null value")]
@@ -18,7 +18,13 @@ pub enum ErrorKind {
     #[fail(display = "Undefined expression")]
     UndefinedExpr,
     #[fail(display = "Format error")]
-    FormatError(std::fmt::Error)
+    Format(#[cause] std::fmt::Error),
+    #[fail(display = "Parse float error")]
+    ParseFloat(#[cause] std::num::ParseFloatError),
+    #[fail(display = "Parse int error")]
+    ParseInt(#[cause] std::num::ParseIntError),
+    #[fail(display = "Parse bool error")]
+    ParseBool(#[cause] std::str::ParseBoolError),
 }
 
 /// Defines error type for bufdb lib.
@@ -43,9 +49,22 @@ impl Display for Error {
     }
 }
 
+impl Default for Error {
+    fn default() -> Self {
+        Self { 
+            inner: Context::new(Default::default()) 
+        }
+    }
+}
+
 impl Error {
-    pub fn kind(&self) -> ErrorKind {
-        *self.inner.get_context()
+    pub fn new_datatype_err() -> Self {
+        Self { 
+            inner: Context::new(ErrorKind::DataType) 
+        }
+    }
+    pub fn kind(&self) -> &ErrorKind {
+        self.inner.get_context()
     }
 }
 
@@ -59,6 +78,24 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 impl From<std::fmt::Error> for Error {
     fn from(err: std::fmt::Error) -> Self {
-        ErrorKind::FormatError(err).into()
+        ErrorKind::Format(err).into()
+    }
+}
+
+impl From<std::num::ParseFloatError> for Error {
+    fn from(err: std::num::ParseFloatError) -> Self {
+        ErrorKind::ParseFloat(err).into()
+    }
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(err: std::num::ParseIntError) -> Self {
+        ErrorKind::ParseInt(err).into()
+    }
+}
+
+impl From<std::str::ParseBoolError> for Error {
+    fn from(err: std::str::ParseBoolError) -> Self {
+        ErrorKind::ParseBool(err).into()
     }
 }

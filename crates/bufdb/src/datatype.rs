@@ -4,6 +4,7 @@ use strum::Display;
 use strum::EnumString;
 use strum::FromRepr;
 
+use crate::error::Error;
 use crate::error::Result;
 
 /// Defines supported datatypes in bufdb.
@@ -128,6 +129,81 @@ impl ConvertTo<String> for Value {
                 }
                 Ok(Some(s))
             }
+        }
+    }
+}
+
+impl ConvertTo<f64> for Value {
+    fn convert_to(&self) -> Result<Option<f64>> {
+        match self {
+            Self::NULL => Ok(None),
+            Self::STRING(v) => Ok(Some(v.parse()?)),
+            Self::DOUBLE(v) => Ok(Some(*v)),
+            Self::INT(v) => Ok(Some(*v as _)),
+            Self::LONG(v) => Ok(Some(*v as _)),
+            Self::DATETIME(v) => Ok(Some(*v as _)),
+            Self::BOOL(v) => Ok(Some(if *v { 1f64 } else { 0f64 })),
+            _ => Err(Error::new_datatype_err())
+        }
+    }
+}
+
+impl ConvertTo<i32> for Value {
+    fn convert_to(&self) -> Result<Option<i32>> {
+        match self {
+            Self::NULL => Ok(None),
+            Self::STRING(v) => Ok(Some(v.parse()?)),
+            Self::DOUBLE(v) => Ok(Some(*v as _)),
+            Self::INT(v) => Ok(Some(*v)),
+            Self::LONG(v) => Ok(Some(*v as _)),
+            Self::DATETIME(v) => Ok(Some(*v as _)),
+            Self::BOOL(v) => Ok(Some(*v as _)),
+            _ => Err(Error::new_datatype_err())
+        }
+    }
+}
+
+impl ConvertTo<i64> for Value {
+    fn convert_to(&self) -> Result<Option<i64>> {
+        match self {
+            Self::NULL => Ok(None),
+            Self::STRING(v) => Ok(Some(v.parse()?)),
+            Self::DOUBLE(v) => Ok(Some(*v as _)),
+            Self::INT(v) => Ok(Some(*v as _)),
+            Self::LONG(v) => Ok(Some(*v)),
+            Self::DATETIME(v) => Ok(Some(*v as _)),
+            Self::BOOL(v) => Ok(Some(*v as _)),
+            _ => Err(Error::new_datatype_err())
+        }
+    }
+}
+
+impl ConvertTo<TimeStamp> for Value {
+    fn convert_to(&self) -> Result<Option<TimeStamp>> {
+        match self {
+            Self::NULL => Ok(None),
+            Self::STRING(v) => Ok(Some(v.parse()?)),
+            Self::DOUBLE(v) => Ok(Some(*v as _)),
+            Self::INT(v) => Ok(Some(*v as _)),
+            Self::LONG(v) => Ok(Some(*v as _)),
+            Self::DATETIME(v) => Ok(Some(*v)),
+            Self::BOOL(v) => Ok(Some(*v as _)),
+            _ => Err(Error::new_datatype_err())
+        }
+    }
+}
+
+impl ConvertTo<bool> for Value {
+    fn convert_to(&self) -> Result<Option<bool>> {
+        match self {
+            Self::NULL => Ok(None),
+            Self::STRING(v) => Ok(Some(v.parse()?)),
+            Self::DOUBLE(v) => Ok(Some(*v != 0f64)),
+            Self::INT(v) => Ok(Some(*v != 0)),
+            Self::LONG(v) => Ok(Some(*v != 0)),
+            Self::DATETIME(v) => Ok(Some(*v != 0)),
+            Self::BOOL(v) => Ok(Some(*v)),
+            _ => Err(Error::new_datatype_err())
         }
     }
 }
