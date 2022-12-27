@@ -205,6 +205,8 @@ impl IndexMut<usize> for Record {
 
 #[cfg(test)]
 mod tests {
+    use crate::datatype::Value;
+
     use super::Record;
 
     #[test]
@@ -232,5 +234,16 @@ mod tests {
         assert_eq!(Some(true), record.get_bool(6).unwrap());
         assert_eq!(Some(blob.as_slice()), record.get_blob(7).unwrap());
         assert!(record.is_null(8).is_err());
+    }
+
+    #[test]
+    fn test_record_index() {
+        let mut record = Record::new(2);
+
+        record[0] = Value::INT(10);
+        record[1] = Value::DOUBLE(100f64);
+
+        assert_eq!(record[0], Value::INT(10));
+        assert_eq!(record[1], Value::DOUBLE(100f64));
     }
 }
