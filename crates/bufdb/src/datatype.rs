@@ -106,6 +106,16 @@ impl From<Vec<u8>> for Value {
     }
 }
 
+impl<T> From<Option<T>> for Value where T: Into<Value> {
+    fn from(value: Option<T>) -> Self {
+        if let Some(v) = value {
+            v.into()
+        } else {
+            Value::NULL
+        }
+    }
+}
+
 /// `Converter<T>` trait can convert the bufdb `Value` to rust raw type `<T>`.
 pub trait ConvertTo<T> {
     /// Converts the current value to type `<T>`. Returns `None` if value is null.
