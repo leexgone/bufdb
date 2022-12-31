@@ -203,8 +203,36 @@ impl IndexMut<usize> for Record {
     }
 }
 
+impl IntoIterator for Record {
+    type Item = Value;
+    type IntoIter = std::vec::IntoIter<Value>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Record {
+    type Item = &'a Value;
+    type IntoIter = std::slice::Iter<'a, Value>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.values).into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Record {
+    type Item = &'a mut Value;
+    type IntoIter = std::slice::IterMut<'a, Value>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&mut self.values).into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::datatype::ConvertTo;
     use crate::datatype::Value;
 
     use super::Record;
@@ -245,5 +273,22 @@ mod tests {
 
         assert_eq!(record[0], Value::INT(10));
         assert_eq!(record[1], Value::DOUBLE(100f64));
+    }
+
+    #[test]
+    fn test_record_iter() {
+        let mut record = Record::new(3);
+
+        record[0] = 1i32.into();
+        record[1] = 10i32.into();
+        record[2] = 100i32.into();
+
+        let mut all = 0i32;
+        for val in record {
+            let v: i32 = val.convert_to().unwrap().unwrap();
+            all = all + v;
+        }
+
+        assert_eq!(111i32, all);
     }
 }
