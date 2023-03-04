@@ -1,5 +1,7 @@
 use std::fmt::Write;
 
+use serde::Deserialize;
+use serde::Serialize;
 use strum::Display;
 use strum::EnumString;
 use strum::FromRepr;
@@ -8,7 +10,7 @@ use crate::error::Error;
 use crate::error::Result;
 
 /// Defines supported datatypes in bufdb.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, Display, EnumString, FromRepr)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, Display, EnumString, FromRepr, Serialize, Deserialize)]
 pub enum DataType {
     #[default]
     #[strum(serialize = "string")]
