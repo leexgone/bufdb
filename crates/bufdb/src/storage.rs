@@ -129,6 +129,7 @@ pub trait Environment {
     fn rename_database(&mut self, raw_name: &str, new_name: &str) -> Result<()>;
 }
 
+#[derive(Debug, Clone)]
 pub struct TableConfig {
 
 }
