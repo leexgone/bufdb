@@ -1,8 +1,10 @@
+use std::cmp::Ordering;
+
 use crate::error::Result;
 use crate::model::IndexDefine;
 use crate::model::TableDefine;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct BufferEntry {
     data: Vec<u8>,
     offset: usize,
@@ -10,8 +12,12 @@ pub struct BufferEntry {
 }
 
 impl BufferEntry {
-    pub fn new(data: Vec<u8>, offset: usize, len: usize) -> BufferEntry {
-        BufferEntry { data, offset, len }
+    pub fn new<T: Into<Vec<u8>>>(data: T, offset: usize, len: usize) -> BufferEntry {
+        BufferEntry { 
+            data: data.into(), 
+            offset, 
+            len 
+        }
     }
 
     pub fn offset(&self) -> usize {
@@ -41,11 +47,11 @@ impl AsRef<Vec<u8>> for BufferEntry {
     }
 }
 
-impl AsMut<Vec<u8>> for BufferEntry {
-    fn as_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.data
-    }
-}
+// impl AsMut<Vec<u8>> for BufferEntry {
+//     fn as_mut(&mut self) -> &mut Vec<u8> {
+//         &mut self.data
+//     }
+// }
 
 impl AsRef<[u8]> for BufferEntry {
     fn as_ref(&self) -> &[u8] {
@@ -59,8 +65,9 @@ impl AsMut<[u8]> for BufferEntry {
     }
 }
 
-impl From<Vec<u8>> for BufferEntry {
-    fn from(data: Vec<u8>) -> Self {
+impl <T: Into<Vec<u8>>> From<T> for BufferEntry {
+    fn from(value: T) -> Self {
+        let data: Vec<u8> = value.into();
         let len = data.len();
         BufferEntry { 
             data, 
@@ -70,25 +77,36 @@ impl From<Vec<u8>> for BufferEntry {
     }
 }
 
-impl From<&[u8]> for BufferEntry {
-    fn from(data: &[u8]) -> Self {
-        BufferEntry { 
-            data: data.into(), 
-            offset: 0, 
-            len: data.len() 
-        }
-    }
-}
+// impl From<Vec<u8>> for BufferEntry {
+//     fn from(data: Vec<u8>) -> Self {
+//         let len = data.len();
+//         BufferEntry { 
+//             data, 
+//             offset: 0, 
+//             len
+//         }
+//     }
+// }
 
-impl<const N: usize> From<[u8; N]> for BufferEntry  {
-    fn from(data: [u8; N]) -> Self {
-        BufferEntry { 
-            data: data.into(), 
-            offset: 0, 
-            len: N 
-        }
-    }
-}
+// impl From<&[u8]> for BufferEntry {
+//     fn from(data: &[u8]) -> Self {
+//         BufferEntry { 
+//             data: data.into(), 
+//             offset: 0, 
+//             len: data.len() 
+//         }
+//     }
+// }
+
+// impl<const N: usize> From<[u8; N]> for BufferEntry  {
+//     fn from(data: [u8; N]) -> Self {
+//         BufferEntry { 
+//             data: data.into(), 
+//             offset: 0, 
+//             len: N 
+//         }
+//     }
+// }
 
 pub trait Database<C: Cursor> {
     fn count(&self) -> Result<usize>;
@@ -135,13 +153,13 @@ pub struct TableConfig {
 }
 
 pub trait KeyComparator {
-    fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<i32>;
+    fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<Ordering>;
 
-    fn find_shortest_separator<'a>(&self, start: &'a BufferEntry, _limit: &'a BufferEntry) -> Result<&'a BufferEntry> {
-        Ok(start)
-    }
+    // fn find_shortest_separator<'a>(&self, start: &'a BufferEntry, _limit: &'a BufferEntry) -> Result<&'a BufferEntry> {
+    //     Ok(start)
+    // }
 
-    fn fins_shortest_successor<'a>(&self, key: &'a BufferEntry) -> Result<&'a BufferEntry> {
-        Ok(key)
-    }
+    // fn fins_shortest_successor<'a>(&self, key: &'a BufferEntry) -> Result<&'a BufferEntry> {
+    //     Ok(key)
+    // }
 }
