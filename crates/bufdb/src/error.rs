@@ -25,6 +25,8 @@ pub enum ErrorKind {
     ParseInt(#[cause] std::num::ParseIntError),
     #[fail(display = "Parse bool error")]
     ParseBool(#[cause] std::str::ParseBoolError),
+    #[fail(display = "Parse datetime error")]
+    ParseDateTime(#[cause] chrono::format::ParseError),
 }
 
 /// Defines error type for bufdb lib.
@@ -97,5 +99,11 @@ impl From<std::num::ParseIntError> for Error {
 impl From<std::str::ParseBoolError> for Error {
     fn from(err: std::str::ParseBoolError) -> Self {
         ErrorKind::ParseBool(err).into()
+    }
+}
+
+impl From<chrono::format::ParseError> for Error {
+    fn from(err: chrono::format::ParseError) -> Self {
+        ErrorKind::ParseDateTime(err).into()
     }
 }

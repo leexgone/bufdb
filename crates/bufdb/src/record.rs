@@ -232,7 +232,10 @@ impl<'a> IntoIterator for &'a mut Record {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Local;
+
     use crate::datatype::ConvertTo;
+    use crate::datatype::TimeStamp;
     use crate::datatype::Value;
 
     use super::Record;
@@ -242,13 +245,14 @@ mod tests {
         let mut record = Record::new(8);
 
         let blob = vec![1u8, 2, 3];
+        let now: TimeStamp = Local::now().naive_local().into();        
 
         record.set_null(0).unwrap();
         record.set_str(1, "Hello").unwrap();
         record.set_double(2, 3.14).unwrap();
         record.set_int(3, 100).unwrap();
         record.set_long(4, 10000).unwrap();
-        record.set_datetime(5, 123456789).unwrap();
+        record.set_datetime(5, now).unwrap();
         record.set_bool(6, true).unwrap();
         record.set_blob(7, blob.as_slice()).unwrap();
 
@@ -258,7 +262,7 @@ mod tests {
         assert_eq!(Some(3.14), record.get_double(2).unwrap());
         assert_eq!(Some(100), record.get_int(3).unwrap());
         assert_eq!(Some(10000), record.get_long(4).unwrap());
-        assert_eq!(Some(123456789), record.get_datetime(5).unwrap());
+        assert_eq!(Some(now), record.get_datetime(5).unwrap());
         assert_eq!(Some(true), record.get_bool(6).unwrap());
         assert_eq!(Some(blob.as_slice()), record.get_blob(7).unwrap());
         assert!(record.is_null(8).is_err());
