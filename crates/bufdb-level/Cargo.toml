@@ -16,6 +16,7 @@ categories = []
 [dependencies]
 
 bufdb = { version = "0.0.1", path = "../bufdb" }
+leveldb = "0.8.6"
 
 # failure = "0.1.8"
 # strum = { version = "0.24.1", features = ["derive"] }

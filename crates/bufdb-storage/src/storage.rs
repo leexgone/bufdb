@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
-use crate::error::Result;
-use crate::model::IndexDefine;
-use crate::model::TableDefine;
+use bufdb_api::error::Result;
+use bufdb_api::model::IndexDefine;
+use bufdb_api::model::TableDefine;
 
 #[derive(Debug, Default, Clone)]
 pub struct BufferEntry {

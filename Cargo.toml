@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "crates/bufdb-api",
     "crates/bufdb-storage",
     "crates/bufdb-level",
     "crates/bufdb", 

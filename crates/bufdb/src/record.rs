@@ -2,11 +2,11 @@ use std::fmt::Display;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-use crate::datatype::ConvertTo;
-use crate::datatype::TimeStamp;
-use crate::datatype::Value;
-use crate::error::ErrorKind;
-use crate::error::Result;
+use bufdb_api::datatype::ConvertTo;
+use bufdb_api::datatype::TimeStamp;
+use bufdb_api::datatype::Value;
+use bufdb_api::error::ErrorKind;
+use bufdb_api::error::Result;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Record {
@@ -247,11 +247,9 @@ impl Display for Record {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Local;
-
-    use crate::datatype::ConvertTo;
-    use crate::datatype::TimeStamp;
-    use crate::datatype::Value;
+    use bufdb_api::datatype::ConvertTo;
+    use bufdb_api::datatype::TimeStamp;
+    use bufdb_api::datatype::Value;
 
     use super::Record;
 
@@ -260,7 +258,7 @@ mod tests {
         let mut record = Record::new(8);
 
         let blob = vec![1u8, 2, 3];
-        let now: TimeStamp = Local::now().naive_local().into();        
+        let now = TimeStamp::now();        
 
         record.set_null(0).unwrap();
         record.set_str(1, "Hello").unwrap();

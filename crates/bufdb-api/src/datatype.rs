@@ -2,7 +2,9 @@ use std::fmt::Display;
 use std::fmt::Write;
 use std::str::FromStr;
 
+use chrono::Local;
 use chrono::NaiveDateTime;
+use chrono::NaiveTime;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
@@ -37,6 +39,17 @@ pub enum DataType {
 /// `TimeStamp` stores the number of non-leap seconds since January 1, 1970 0:00:00 UTC (also known as “UNIX timestamp”).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct TimeStamp(i64);
+
+impl TimeStamp {
+    pub fn now() -> TimeStamp {
+        Local::now().naive_local().into()
+    }
+
+    pub fn today() -> TimeStamp {
+        let date = Local::now().date_naive();
+        NaiveDateTime::new(date, NaiveTime::default()).into()
+    }
+}
 
 impl Into<i64> for TimeStamp {
     fn into(self) -> i64 {
