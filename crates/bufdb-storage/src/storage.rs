@@ -77,37 +77,6 @@ impl <T: Into<Vec<u8>>> From<T> for BufferEntry {
     }
 }
 
-// impl From<Vec<u8>> for BufferEntry {
-//     fn from(data: Vec<u8>) -> Self {
-//         let len = data.len();
-//         BufferEntry { 
-//             data, 
-//             offset: 0, 
-//             len
-//         }
-//     }
-// }
-
-// impl From<&[u8]> for BufferEntry {
-//     fn from(data: &[u8]) -> Self {
-//         BufferEntry { 
-//             data: data.into(), 
-//             offset: 0, 
-//             len: data.len() 
-//         }
-//     }
-// }
-
-// impl<const N: usize> From<[u8; N]> for BufferEntry  {
-//     fn from(data: [u8; N]) -> Self {
-//         BufferEntry { 
-//             data: data.into(), 
-//             offset: 0, 
-//             len: N 
-//         }
-//     }
-// }
-
 pub trait Database<C: Cursor> {
     fn count(&self) -> Result<usize>;
     fn put(&mut self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;

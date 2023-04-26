@@ -6,4 +6,3 @@ pub mod record;
 pub mod model;
 pub mod error;
 pub mod datatype;
-pub mod storage;

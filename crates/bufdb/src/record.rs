@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::Index;
 use std::ops::IndexMut;
 
@@ -7,7 +8,7 @@ use crate::datatype::Value;
 use crate::error::ErrorKind;
 use crate::error::Result;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Record {
     values: Vec<Value>
 }
@@ -230,6 +231,20 @@ impl<'a> IntoIterator for &'a mut Record {
     }
 }
 
+impl Display for Record {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        for (i, v) in self.into_iter().enumerate() {
+            if i > 0 {
+                write!(f, ", {}", v)?;
+            } else {
+                write!(f, "{}", v)?;
+            }
+        }
+        write!(f, "]")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::Local;
@@ -266,6 +281,8 @@ mod tests {
         assert_eq!(Some(true), record.get_bool(6).unwrap());
         assert_eq!(Some(blob.as_slice()), record.get_blob(7).unwrap());
         assert!(record.is_null(8).is_err());
+
+        println!("{}", record);
     }
 
     #[test]

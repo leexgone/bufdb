@@ -159,7 +159,8 @@ impl<T> From<Option<T>> for Value where T: Into<Value> {
 macro_rules! to_hex_string {
     ($arr:expr) => {
         {
-            let mut s = String::with_capacity($arr.len() * 2);
+            let mut s = String::with_capacity($arr.len() * 2 + 2);
+            write!(s, "0x")?;
             for b in $arr.iter() {
                 write!(s, "{:02X}", b)?;
             }
@@ -168,6 +169,7 @@ macro_rules! to_hex_string {
     };
     ($f:expr, $arr:expr) => {
         {
+            write!($f, "0x")?;
             for b in $arr.iter() {
                 write!($f, "{:02X}", b)?;
             }
