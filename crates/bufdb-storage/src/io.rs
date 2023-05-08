@@ -22,18 +22,18 @@ use std::io::Write;
 
 /// `Input` trait 
 pub trait Input {
-    fn read_string(&self) -> Result<String>;
-    fn read_u8(&self) -> Result<u8>;
-    fn read_u16(&self) -> Result<u16>;
-    fn read_u32(&self) -> Result<u32>;
-    fn read_u64(&self) -> Result<u64>;
-    fn read_i8(&self) -> Result<i8>;
-    fn read_i16(&self) -> Result<i16>;
-    fn read_i32(&self) -> Result<i32>;
-    fn read_i64(&self) -> Result<i64>;
-    fn read_f64(&self) -> Result<f64>;
-    fn read_packed_i32(&self) -> Result<i32>;
-    fn read_packed_i64(&self) -> Result<i64>;
+    fn read_string(&mut self) -> Result<String>;
+    fn read_u8(&mut self) -> Result<u8>;
+    fn read_u16(&mut self) -> Result<u16>;
+    fn read_u32(&mut self) -> Result<u32>;
+    fn read_u64(&mut self) -> Result<u64>;
+    fn read_i8(&mut self) -> Result<i8>;
+    fn read_i16(&mut self) -> Result<i16>;
+    fn read_i32(&mut self) -> Result<i32>;
+    fn read_i64(&mut self) -> Result<i64>;
+    fn read_f64(&mut self) -> Result<f64>;
+    fn read_packed_i32(&mut self) -> Result<i32>;
+    fn read_packed_i64(&mut self) -> Result<i64>;
 }
 
 pub trait Output : Sized {
@@ -42,17 +42,17 @@ pub trait Output : Sized {
     }
 
     fn write_str(&mut self, s: &str) -> Result<()>;
-    fn write_u8(&mut self) -> Result<()>;
-    fn write_u16(&mut self) -> Result<()>;
-    fn write_u32(&mut self) -> Result<()>;
-    fn write_u64(&mut self) -> Result<()>;
-    fn write_i8(&mut self) -> Result<()>;
-    fn write_i16(&mut self) -> Result<()>;
-    fn write_i32(&mut self) -> Result<()>;
-    fn write_i64(&mut self) -> Result<()>;
-    fn write_f64(&mut self) -> Result<()>;
-    fn write_packed_i32(&mut self) -> Result<()>;
-    fn write_packed_i64(&mut self) -> Result<()>;
+    fn write_u8(&mut self, v: u8) -> Result<()>;
+    fn write_u16(&mut self, v: u16) -> Result<()>;
+    fn write_u32(&mut self, v: u32) -> Result<()>;
+    fn write_u64(&mut self, v: u64) -> Result<()>;
+    fn write_i8(&mut self, v: i8) -> Result<()>;
+    fn write_i16(&mut self, v: i16) -> Result<()>;
+    fn write_i32(&mut self, v: i32) -> Result<()>;
+    fn write_i64(&mut self, v: i64) -> Result<()>;
+    fn write_f64(&mut self, v: f64) -> Result<()>;
+    fn write_packed_i32(&mut self, v: i32) -> Result<()>;
+    fn write_packed_i64(&mut self, v: i64) -> Result<()>;
 }
 
 /// `BufferInput` is a reader for buffer entry.
@@ -170,6 +170,79 @@ impl <'a> Seek for BufferInput<'a> {
     }
 }
 
+macro_rules! io_read {
+    ($r: expr, $t: ty) => {
+        {
+            let mut buf = [0u8; std::mem::size_of::<$t>()];
+            $r.read(&mut buf)?;
+            let v = <$t>::from_be_bytes(buf);
+            Ok(v)
+        }
+    };
+}
+
+impl <'a> Input for BufferInput<'a> {
+    fn read_string(&mut self) -> Result<String> {
+        let buffer = &self.data[self.pos..];
+        if let Some(p) = buffer.iter().position(|&b| b == 0u8) {
+            match String::from_utf8(buffer[..p].into()) {
+                Ok(s) => {
+                    self.pos = self.pos + p + 1;
+                    Ok(s)
+                },
+                Err(e) => Err(Error::new(ErrorKind::InvalidData, e.to_string()))
+            } 
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "error read string"))
+        }
+    }
+
+    fn read_u8(&mut self) -> Result<u8> {
+        io_read!(self, u8)
+    }
+
+    fn read_u16(&mut self) -> Result<u16> {
+        io_read!(self, u16)
+    }
+
+    fn read_u32(&mut self) -> Result<u32> {
+        io_read!(self, u32)
+    }
+
+    fn read_u64(&mut self) -> Result<u64> {
+        io_read!(self, u64)
+    }
+
+    fn read_i8(&mut self) -> Result<i8> {
+        io_read!(self, i8)
+    }
+
+    fn read_i16(&mut self) -> Result<i16> {
+        io_read!(self, i16)
+    }
+
+    fn read_i32(&mut self) -> Result<i32> {
+        io_read!(self, i32)
+    }
+
+    fn read_i64(&mut self) -> Result<i64> {
+        io_read!(self, i64)
+    }
+
+    fn read_f64(&mut self) -> Result<f64> {
+        io_read!(self, f64)
+    }
+
+    fn read_packed_i32(&mut self) -> Result<i32> {
+        todo!()
+    }
+
+    fn read_packed_i64(&mut self) -> Result<i64> {
+        todo!()
+    }
+
+}
+
 #[derive(Debug, Clone)]
 pub struct BufferOutput {
     data: Vec<u8>,
@@ -270,5 +343,67 @@ impl Seek for BufferOutput {
 
     fn stream_position(&mut self) -> Result<u64> {
         Ok(self.pos as _)
+    }
+}
+
+macro_rules! io_write {
+    ($w: expr, $v: expr) => {
+        {
+            let buf = $v.to_be_bytes();
+            $w.write(&buf)?;
+            Ok(())
+        }
+    };
+}
+
+impl Output for BufferOutput {
+    fn write_str(&mut self, s: &str) -> Result<()> {
+        self.write(s.as_bytes())?;
+        self.write(&[0u8])?;
+        Ok(())
+    }
+
+    fn write_u8(&mut self, v: u8) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_u16(&mut self, v: u16) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_u32(&mut self, v: u32) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_u64(&mut self, v: u64) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_i8(&mut self, v: i8) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_i16(&mut self, v: i16) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_i32(&mut self, v: i32) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_i64(&mut self, v: i64) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_f64(&mut self, v: f64) -> Result<()> {
+        io_write!(self, v)
+    }
+
+    fn write_packed_i32(&mut self, v: i32) -> Result<()> {
+        todo!()
+    }
+
+    fn write_packed_i64(&mut self, v: i64) -> Result<()> {
+        todo!()
     }
 }
