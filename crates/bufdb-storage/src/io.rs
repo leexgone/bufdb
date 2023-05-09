@@ -20,9 +20,12 @@ use std::io::Result;
 use std::io::Seek;
 use std::io::Write;
 
+/// Null strings are UTF encoded as `0xFF`, which is not allowed in a standard UTF encoding.
+const UTF_NULL: u8 = 0xff;
+
 /// `Input` trait 
 pub trait Input {
-    fn read_string(&mut self) -> Result<String>;
+    fn read_string(&mut self) -> Result<Option<String>>;
     fn read_u8(&mut self) -> Result<u8>;
     fn read_u16(&mut self) -> Result<u16>;
     fn read_u32(&mut self) -> Result<u32>;
@@ -37,11 +40,11 @@ pub trait Input {
 }
 
 pub trait Output : Sized {
-    fn write_string(&mut self, s: &String) -> Result<()> {
-        self.write_str(s.as_str())
+    fn write_string(&mut self, s: Option<&String>) -> Result<()> {
+        self.write_str(s.map(|s| s.as_ref()))
     }
 
-    fn write_str(&mut self, s: &str) -> Result<()>;
+    fn write_str(&mut self, s: Option<&str>) -> Result<()>;
     fn write_u8(&mut self, v: u8) -> Result<()>;
     fn write_u16(&mut self, v: u16) -> Result<()>;
     fn write_u32(&mut self, v: u32) -> Result<()>;
@@ -182,18 +185,27 @@ macro_rules! io_read {
 }
 
 impl <'a> Input for BufferInput<'a> {
-    fn read_string(&mut self) -> Result<String> {
-        let buffer = &self.data[self.pos..];
-        if let Some(p) = buffer.iter().position(|&b| b == 0u8) {
-            match String::from_utf8(buffer[..p].into()) {
-                Ok(s) => {
-                    self.pos = self.pos + p + 1;
-                    Ok(s)
-                },
-                Err(e) => Err(Error::new(ErrorKind::InvalidData, e.to_string()))
-            } 
+    fn read_string(&mut self) -> Result<Option<String>> {
+        if let Some(&n) = self.data.get(self.pos) {
+            if n == UTF_NULL {
+                self.pos = self.pos + 1;
+                Ok(None)
+            } else {
+                let buffer = &self.data[self.pos..];
+                if let Some(p) = buffer.iter().position(|&b| b == 0u8) {
+                    match String::from_utf8(buffer[..p].into()) {
+                        Ok(s) => {
+                            self.pos = self.pos + p + 1;
+                            Ok(Some(s))
+                        },
+                        Err(e) => Err(Error::new(ErrorKind::InvalidData, e.to_string()))
+                    }
+                } else {
+                    Err(Error::new(ErrorKind::InvalidData, "error read string"))
+                }
+            }
         } else {
-            Err(Error::new(ErrorKind::InvalidData, "error read string"))
+            Err(Error::new(ErrorKind::UnexpectedEof, "read string out of bounds"))
         }
     }
 
@@ -357,9 +369,14 @@ macro_rules! io_write {
 }
 
 impl Output for BufferOutput {
-    fn write_str(&mut self, s: &str) -> Result<()> {
-        self.write(s.as_bytes())?;
-        self.write(&[0u8])?;
+    fn write_str(&mut self, s: Option<&str>) -> Result<()> {
+        if let Some(s) = s {
+            self.write(s.as_bytes())?;
+            self.write(&[0u8])?;
+        } else {
+            self.write(&[UTF_NULL])?;
+        }
+
         Ok(())
     }
 
