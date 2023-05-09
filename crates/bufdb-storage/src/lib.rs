@@ -7,6 +7,7 @@ use entry::BufferEntry;
 
 pub mod entry;
 pub mod io;
+pub(crate) mod packed_int;
 
 pub trait Database<C: Cursor> {
     fn count(&self) -> Result<usize>;

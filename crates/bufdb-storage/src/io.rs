@@ -20,6 +20,9 @@ use std::io::Result;
 use std::io::Seek;
 use std::io::Write;
 
+use crate::packed_int::PackedI32;
+use crate::packed_int::PackedI64;
+
 /// Null strings are UTF encoded as `0xFF`, which is not allowed in a standard UTF encoding.
 const UTF_NULL: u8 = 0xff;
 
@@ -246,11 +249,17 @@ impl <'a> Input for BufferInput<'a> {
     }
 
     fn read_packed_i32(&mut self) -> Result<i32> {
-        todo!()
+        let mut v = PackedI32::default();
+        let len = v.read(&self.data[self.pos..])?;
+        self.pos = self.pos + len;
+        Ok(v.into())
     }
 
     fn read_packed_i64(&mut self) -> Result<i64> {
-        todo!()
+        let mut v = PackedI64::default();
+        let len = v.read(&self.data[self.pos..])?;
+        self.pos = self.pos + len;
+        Ok(v.into())
     }
 
 }
@@ -300,6 +309,13 @@ impl BufferOutput {
     /// Retrieves the size of actual data. Excluding the heading data which is ignored by `offset.
     pub fn size(&self) -> usize {
         self.data.len() - self.off
+    }
+
+    /// Requires more storage.
+    pub fn require(&mut self, need_size: usize) {
+        if self.data.len() - self.pos < need_size {
+            self.data.resize(self.pos + need_size, 0);
+        }
     }
 }
 
@@ -417,10 +433,18 @@ impl Output for BufferOutput {
     }
 
     fn write_packed_i32(&mut self, v: i32) -> Result<()> {
-        todo!()
+        self.require(PackedI32::MAX_LENGETH);
+        let val = PackedI32::from(v);
+        let len = val.write(&mut self.data[self.pos..])?;
+        self.pos = self.pos + len;
+        Ok(())
     }
 
     fn write_packed_i64(&mut self, v: i64) -> Result<()> {
-        todo!()
+        self.require(PackedI64::MAX_LENGETH);
+        let val = PackedI64::from(v);
+        let len = val.write(&mut self.data[self.pos..])?;
+        self.pos = self.pos + len;
+        Ok(())
     }
 }
