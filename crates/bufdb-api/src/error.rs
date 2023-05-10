@@ -27,8 +27,14 @@ pub enum ErrorKind {
     ParseBool(#[cause] std::str::ParseBoolError),
     #[fail(display = "Parse datetime error")]
     ParseDateTime(#[cause] chrono::format::ParseError),
-    // #[fail(display = "database error")]
-    // DBError(#[cause] SyncF),
+    #[fail(display = "database open error")]
+    DBOpen,
+    #[fail(display = "database read error")]
+    DBRead,
+    #[fail(display = "database write error")]
+    DBWrite,
+    #[fail(display = "database close error")]
+    DBClose
 }
 
 /// Defines error type for bufdb lib.

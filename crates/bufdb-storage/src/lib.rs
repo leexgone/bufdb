@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use bufdb_api::config::TableConfig;
 use bufdb_api::error::Result;
 use bufdb_api::model::IndexDefine;
-use bufdb_api::model::TableDefine;
 use entry::BufferEntry;
 
 pub mod entry;
