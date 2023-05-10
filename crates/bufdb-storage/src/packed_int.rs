@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::io::Result;
 
+/// Packed `i32` storage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct PackedI32(pub i32);
 
@@ -85,6 +86,7 @@ impl Into<i32> for PackedI32 {
     }
 }
 
+/// Packed `i64` storage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct PackedI64(pub i64);
 

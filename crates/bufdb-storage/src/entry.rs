@@ -1,36 +1,43 @@
+use crate::io::BufferInput;
+use crate::io::BufferOutput;
+
 #[derive(Debug, Default, Clone)]
 pub struct BufferEntry {
     data: Vec<u8>,
-    offset: usize,
+    off: usize,
     len: usize
 }
 
 impl BufferEntry {
-    pub fn new<T: Into<Vec<u8>>>(data: T, offset: usize, len: usize) -> BufferEntry {
+    pub fn new<T: Into<Vec<u8>>>(data: T, off: usize, size: usize) -> BufferEntry {
         BufferEntry { 
             data: data.into(), 
-            offset, 
-            len 
+            off, 
+            len: off + size
         }
     }
 
-    pub fn offset(&self) -> usize {
-        self.offset
+    pub fn off(&self) -> usize {
+        self.off
     }
 
     pub fn len(&self) -> usize {
         self.len
     }
 
+    pub fn size(&self) -> usize {
+        self.len - self.off
+    }
+
     pub fn set_data(&mut self, data: Vec<u8>) {
-        self.offset = 0;
+        self.off = 0;
         self.len = data.len();
         self.data = data;
     }
 
-    pub fn set_data_offset(&mut self, data: Vec<u8>, offset: usize, len: usize) {
-        self.offset = offset;
-        self.len = len;
+    pub fn set_data_offset(&mut self, data: Vec<u8>, off: usize, size: usize) {
+        self.off = off;
+        self.len = off + size;
         self.data = data;
     }
 }
@@ -53,14 +60,31 @@ impl AsMut<[u8]> for BufferEntry {
     }
 }
 
-impl <T: Into<Vec<u8>>> From<T> for BufferEntry {
-    fn from(value: T) -> Self {
-        let data: Vec<u8> = value.into();
+impl From<Vec<u8>> for BufferEntry {
+    fn from(data: Vec<u8>) -> Self {
         let len = data.len();
         BufferEntry { 
             data, 
-            offset: 0, 
+            off: 0, 
             len
         }
+    }
+}
+
+impl Into<Vec<u8>> for BufferEntry {
+    fn into(self) -> Vec<u8> {
+        self.data
+    }
+}
+
+impl <'a> Into<BufferInput<'a>> for &'a BufferEntry {
+    fn into(self) -> BufferInput<'a> {
+        BufferInput::new_offset(self.as_ref(), self.off, self.size())
+    }
+}
+
+impl Into<BufferOutput> for BufferEntry {
+    fn into(self) -> BufferOutput {
+        BufferOutput::new_from_vec(self.data, self.off)
     }
 }

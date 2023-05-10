@@ -282,11 +282,20 @@ impl BufferOutput {
     }
 
     /// Creates a new `BufferOutput` with `offset`.
-    pub fn new_offset(offset: usize) -> Self {
+    pub fn new_offset(off: usize) -> Self {
         let mut output = Self::new();
-        output.data.resize(offset, 0); 
-        output.off = offset;
+        output.data.resize(off, 0); 
+        output.off = off;
         output
+    }
+
+    /// Creates a new `BufferOutput` from a current vec.
+    pub fn new_from_vec(data: Vec<u8>, off: usize) -> Self {
+        Self {
+            data,
+            off,
+            pos: 0
+        }
     }
 
     /// Retrieves the offset of the buffer whitch define the starter of actual data.
