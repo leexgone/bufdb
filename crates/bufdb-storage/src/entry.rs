@@ -1,3 +1,5 @@
+use db_key::Key;
+
 use crate::io::BufferInput;
 use crate::io::BufferOutput;
 
@@ -86,5 +88,17 @@ impl <'a> Into<BufferInput<'a>> for &'a BufferEntry {
 impl Into<BufferOutput> for BufferEntry {
     fn into(self) -> BufferOutput {
         BufferOutput::new_from_vec(self.data, self.off)
+    }
+}
+
+impl Key for BufferEntry {
+    fn from_u8(key: &[u8]) -> Self {
+        let data = Vec::from(key);
+        data.into()
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        let key = &self.data[self.off..self.len];
+        f(key)
     }
 }

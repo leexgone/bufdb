@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use bufdb_api::config::TableConfig;
 use bufdb_api::error::Result;
 use bufdb_api::model::IndexDefine;
 use bufdb_api::model::TableDefine;
@@ -40,17 +41,12 @@ pub trait Environment {
     type DATABASE: Database<Self::CURSOR>;
     type SDATABASE: Database<Self::SCUROSR>;
 
-    fn create_database<C: KeyComparator>(&mut self, define: TableDefine, config: TableConfig, comparator: C) -> Result<Self::DATABASE>;
+    fn create_database<C: KeyComparator>(&mut self, name: &str, config: TableConfig, comparator: C) -> Result<Self::DATABASE>;
     fn create_secondary_database<C: KeyComparator>(&mut self, database: &Self::DATABASE, name: &str, define: IndexDefine, comparator: C) -> Result<Self::SDATABASE>;
     fn drop_database(&mut self, name: &str) -> Result<()>;
     fn drop_secondary_database(&mut self, name: &str) -> Result<()>;
     fn truncate_database(&mut self, name: &str) -> Result<()>;
     fn rename_database(&mut self, raw_name: &str, new_name: &str) -> Result<()>;
-}
-
-#[derive(Debug, Clone)]
-pub struct TableConfig {
-
 }
 
 pub trait KeyComparator {
