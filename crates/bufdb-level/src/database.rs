@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+use bufdb_api::db_error;
 use bufdb_api::error::ErrorKind;
 use bufdb_api::error::Result;
 use bufdb_storage::entry::BufferEntry;
@@ -30,7 +31,7 @@ impl PrimaryDatabase {
 
         let database = match Database::open_with_comparator(&dir, options, PKComparator::from(comparator)) {
             Ok(db) => db,
-            Err(_) => return Err(ErrorKind::DBOpen.into()),
+            Err(e) => return Err(db_error!(open => e)),
         };
 
         Ok(Self { 

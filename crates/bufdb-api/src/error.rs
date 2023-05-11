@@ -28,13 +28,15 @@ pub enum ErrorKind {
     #[fail(display = "Parse datetime error")]
     ParseDateTime(#[cause] chrono::format::ParseError),
     #[fail(display = "database open error")]
-    DBOpen,
+    DBOpen(#[cause] PhantomError),
     #[fail(display = "database read error")]
-    DBRead,
+    DBRead(#[cause] PhantomError),
     #[fail(display = "database write error")]
-    DBWrite,
+    DBWrite(#[cause] PhantomError),
     #[fail(display = "database close error")]
-    DBClose
+    DBClose(#[cause] PhantomError),
+    #[fail(display = "database error")]
+    DBOther(#[cause] PhantomError),
 }
 
 /// Defines error type for bufdb lib.
@@ -73,6 +75,9 @@ impl Error {
             inner: Context::new(ErrorKind::DataType) 
         }
     }
+
+
+
     pub fn kind(&self) -> &ErrorKind {
         self.inner.get_context()
     }
@@ -113,5 +118,58 @@ impl From<std::str::ParseBoolError> for Error {
 impl From<chrono::format::ParseError> for Error {
     fn from(err: chrono::format::ParseError) -> Self {
         ErrorKind::ParseDateTime(err).into()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct PhantomError {
+    message: Option<String>
+}
+
+impl PhantomError {
+    pub fn from<T: std::error::Error>(err: T) -> Self {
+        let message = err.to_string();
+        Self { 
+            message: if message.is_empty() { None } else { Some(message) }
+        }        
+    }
+}
+
+impl Display for PhantomError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(ref msg) = self.message {
+            write!(f, "{}", msg)
+        } else {
+            write!(f, "unknown error")
+        }
+    }
+}
+
+impl std::error::Error for PhantomError {
+    fn description(&self) -> &str {
+        if let Some(ref msg) = self.message {
+            msg.as_ref()
+        } else {
+            "unknown error"
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! db_error {
+    (open => $err: expr) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOpen(bufdb_api::error::PhantomError::from($err)))
+    };
+     (read => $err: expr) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBRead(bufdb_api::error::PhantomError::from($err)))
+    };
+    (write => $err: expr) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBWrite(bufdb_api::error::PhantomError::from($err)))
+    };
+    (close => $err: expr) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBClose(bufdb_api::error::PhantomError::from($err)))
+    };
+    ($err: expr) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOther(bufdb_api::error::PhantomError::from($err)))
     }
 }
