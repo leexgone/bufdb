@@ -10,6 +10,7 @@ use leveldb::iterator::Iterable;
 use leveldb::kv::KV;
 use leveldb::options::Options;
 use leveldb::options::ReadOptions;
+use leveldb::options::WriteOptions;
 use leveldb_sys::Compression;
 
 use crate::comparator::PKComparator;
@@ -57,21 +58,37 @@ impl PrimaryDatabase {
 
 impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
     fn count(&self) -> bufdb_api::error::Result<usize> {
-        let options = ReadOptions::new();
-        let count = self.database.iter(options).count();
+        let count = self.database.iter(ReadOptions::new()).count();
         Ok(count)
     }
 
     fn put(&mut self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<()> {
-        todo!()
+        self.database.put(WriteOptions::new(), key, data.slice()).map_err(|e| db_error!(write => e))
     }
 
     fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
-        todo!()
+        match self.database.get(ReadOptions::new(), key) {
+            Ok(data) => Ok(data.map(|d| d.into())),
+            Err(e) => Err(db_error!(read => e)),
+        }
     }
 
     fn delete(&mut self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
-        todo!()
+        let data = match self.database.get(ReadOptions::new(), key) {
+            Ok(d) => { 
+                if let Some(v) = d { 
+                    BufferEntry::from(v) 
+                } else {
+                    return Ok(false);
+                }
+            },
+            Err(e) => return Err(db_error!(write => e)),
+        };
+
+        match self.database.delete(WriteOptions::new(), key) {
+            Ok(_) => Ok(true),
+            Err(e) => Err(db_error!(write => e))
+        }
     }
 
     fn open_cursor(&self) -> bufdb_api::error::Result<PKCursor> {

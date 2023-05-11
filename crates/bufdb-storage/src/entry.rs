@@ -42,6 +42,10 @@ impl BufferEntry {
         self.len = off + size;
         self.data = data;
     }
+
+    pub fn slice(&self) -> &[u8] {
+        &self.data[self.off..self.len]
+    }
 }
 
 impl AsRef<Vec<u8>> for BufferEntry {
