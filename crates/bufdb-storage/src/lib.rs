@@ -13,7 +13,8 @@ pub trait Database<C: Cursor> {
     fn count(&self) -> Result<usize>;
     fn put(&mut self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;
     fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>>;
-    fn delete(&mut self, key: &BufferEntry) -> Result<bool>;
+    fn delete(&mut self, key: &BufferEntry) -> Result<()>;
+    fn delete_exist(&mut self, key: &BufferEntry) -> Result<bool>;
     fn open_cursor(&self) -> Result<C>;
 }
 
