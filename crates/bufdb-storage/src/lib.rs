@@ -11,10 +11,10 @@ pub(crate) mod packed_int;
 
 pub trait Database<C: Cursor> {
     fn count(&self) -> Result<usize>;
-    fn put(&mut self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;
+    fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;
     fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>>;
-    fn delete(&mut self, key: &BufferEntry) -> Result<()>;
-    fn delete_exist(&mut self, key: &BufferEntry) -> Result<bool>;
+    fn delete(&self, key: &BufferEntry) -> Result<()>;
+    fn delete_exist(&self, key: &BufferEntry) -> Result<bool>;
     fn open_cursor(&self) -> Result<C>;
 }
 
@@ -41,8 +41,8 @@ pub trait Environment {
     type DATABASE: Database<Self::CURSOR>;
     type SDATABASE: Database<Self::SCUROSR>;
 
-    fn create_database<C: KeyComparator>(&mut self, name: &str, config: TableConfig, comparator: C) -> Result<Self::DATABASE>;
-    fn create_secondary_database<C: KeyComparator>(&mut self, database: &Self::DATABASE, name: &str, define: IndexDefine, comparator: C) -> Result<Self::SDATABASE>;
+    fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
     fn drop_database(&mut self, name: &str) -> Result<()>;
     fn drop_secondary_database(&mut self, name: &str) -> Result<()>;
     fn truncate_database(&mut self, name: &str) -> Result<()>;
@@ -51,4 +51,21 @@ pub trait Environment {
 
 pub trait KeyComparator {
     fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<Ordering>;
+}
+
+pub trait KeyCreator {
+    fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
+}
+
+pub struct DatabaseConfig<C: KeyComparator> {
+    pub readonly: bool,
+    pub temporary: bool,
+    pub comparator: C
+}
+
+pub struct SDatabaseConfig<C: KeyComparator, G: KeyCreator> {
+    pub readonly: bool,
+    pub temporary: bool,
+    pub comparator: C,
+    pub creator: G
 }

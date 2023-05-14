@@ -22,3 +22,23 @@ impl <T: KeyComparator> From<T> for PKComparator<T> {
         Self(value)
     }
 }
+
+pub struct IDXComparator<C: KeyComparator>(C);
+
+impl <C: KeyComparator> Comparator for IDXComparator<C> {
+    type K = BufferEntry;
+
+    fn name(&self) -> *const c_char {
+        "IDX-Comparator".as_ptr() as *const c_char
+    }
+
+    fn compare(&self, a: &Self::K, b: &Self::K) -> std::cmp::Ordering {
+        todo!("index compare")
+    }
+}
+
+impl <T: KeyComparator> From<T> for IDXComparator<T> {
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}

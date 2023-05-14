@@ -2,11 +2,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use bufdb_api::error::Result;
+use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
-use bufdb_storage::entry::BufferEntry;
-use leveldb::database::Database;
-use leveldb::options::Options;
-use leveldb_sys::Compression;
+use bufdb_storage::KeyComparator;
+use bufdb_storage::KeyCreator;
+use bufdb_storage::SDatabaseConfig;
 
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
@@ -53,13 +53,13 @@ impl Environment for LevelDBEnv {
     type DATABASE = PrimaryDatabase;
     type SDATABASE = SecondaryDatabase;
 
-    fn create_database<C: bufdb_storage::KeyComparator>(&mut self, name: &str, config: bufdb_api::config::TableConfig, comparator: C) -> bufdb_api::error::Result<Self::DATABASE> {
+    fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> bufdb_api::error::Result<Self::DATABASE> {
         let data_dir = self.get_data_dir(name);
 
-        PrimaryDatabase::new(data_dir, config.readonly, config.temporary, comparator)
+        PrimaryDatabase::new(name, data_dir, config.readonly, config.temporary, config.comparator)
     }
 
-    fn create_secondary_database<C: bufdb_storage::KeyComparator>(&mut self, database: &Self::DATABASE, name: &str, define: bufdb_api::model::IndexDefine, comparator: C) -> bufdb_api::error::Result<Self::SDATABASE> {
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_api::error::Result<Self::SDATABASE> {
         todo!()
     }
 
