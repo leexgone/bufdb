@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt::Debug;
 
 use bufdb_api::config::TableConfig;
 use bufdb_api::error::Result;
@@ -49,11 +50,11 @@ pub trait Environment {
     fn rename_database(&mut self, raw_name: &str, new_name: &str) -> Result<()>;
 }
 
-pub trait KeyComparator {
+pub trait KeyComparator : Debug {
     fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<Ordering>;
 }
 
-pub trait KeyCreator {
+pub trait KeyCreator : Debug {
     fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
 }
 
@@ -66,6 +67,7 @@ pub struct DatabaseConfig<C: KeyComparator> {
 pub struct SDatabaseConfig<C: KeyComparator, G: KeyCreator> {
     pub readonly: bool,
     pub temporary: bool,
+    pub unique: bool,
     pub comparator: C,
     pub creator: G
 }

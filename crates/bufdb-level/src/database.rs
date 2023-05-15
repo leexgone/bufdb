@@ -8,6 +8,8 @@ use std::sync::RwLock;
 use bufdb_api::db_error;
 use bufdb_api::error::Result;
 use bufdb_storage::KeyComparator;
+use bufdb_storage::KeyCreator;
+use bufdb_storage::SDatabaseConfig;
 use bufdb_storage::entry::BufferEntry;
 use leveldb::comparator::Comparator;
 use leveldb::database::Database;
@@ -22,6 +24,15 @@ use crate::comparator::IDXComparator;
 use crate::comparator::PKComparator;
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
+
+macro_rules! read_options {
+    () => {
+        ReadOptions::new()
+    };
+    (quick) => {
+        ReadOptions { verify_checksums: false, fill_cache: false, snapshot: None }
+    };
+}
 
 pub(crate) struct DBImpl{
     name: String,
@@ -59,8 +70,13 @@ impl DBImpl {
         })
     }
 
+    fn is_empty(&self) -> Result<bool> {
+        let next = self.db.iter(read_options!(quick)).next();
+        Ok(next.is_none())
+    }
+
     fn count(&self) -> Result<usize> {
-        let count = self.db.iter(ReadOptions::new()).count();
+        let count = self.db.iter(read_options!(quick)).count();
         Ok(count)
     }
 
@@ -109,7 +125,14 @@ impl Debug for DBImpl {
 
 #[derive(Debug)]
 struct IndexListener {
-    idb: Arc<DBImpl>
+    idb: Arc<DBImpl>,
+    creator: Box<dyn KeyCreator>,
+}
+
+impl IndexListener {
+    fn init(&self, pdb: &Arc<DBImpl>) -> Result<()> {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
@@ -119,7 +142,7 @@ pub struct PrimaryDatabase {
 }
 
 impl PrimaryDatabase {
-    pub fn new<C: bufdb_storage::KeyComparator>(name: &str, dir: PathBuf, readonly: bool, temporary: bool, comparator: C) -> Result<Self> {
+    pub fn new<C: KeyComparator>(name: &str, dir: PathBuf, readonly: bool, temporary: bool, comparator: C) -> Result<Self> {
         let database = DBImpl::new(name, dir, readonly, temporary, true, comparator)?;
 
         Ok(Self { 
@@ -128,17 +151,23 @@ impl PrimaryDatabase {
         })
     }
 
-    // pub fn dir(&self) -> &Path {
-    //     &self.database.dir
-    // }
+    fn register_listener<G: KeyCreator>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
+        let listener = IndexListener {
+            idb,
+            creator: Box::new(creator)
+        };
 
-    // pub fn readonly(&self) -> bool {
-    //     self.database.readonly
-    // }
+        listener.init(&self.database)?;
 
-    // pub fn temporary(&self) -> bool {
-    //     self.database.temporary
-    // }
+        let mut listeners = self.listeners.write().unwrap();
+        listeners.push(listener);
+
+        Ok(())
+    }
+
+    fn unregister_listener(&self, idb: &Arc<DBImpl>) -> Result<()> {
+        todo!()
+    }
 }
 
 impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
@@ -181,16 +210,19 @@ pub struct SecondaryDatabase {
 }
 
 impl SecondaryDatabase {
-    pub fn new<C: KeyComparator>(p_database: &PrimaryDatabase, name: &str, temporary: bool, unique: bool, comparator: C) -> Result<SecondaryDatabase> {
+    pub fn new<C: KeyComparator, G: KeyCreator>(p_database: &PrimaryDatabase, name: &str, config: SDatabaseConfig<C, G>) -> Result<SecondaryDatabase> {
         let parent = p_database.database.clone();
 
         let mut dir = parent.dir.clone();
         dir.push(name);
 
-        let db = DBImpl::new(name, dir, parent.readonly, temporary || parent.temporary, unique, comparator)?;
+        let db = DBImpl::new(name, dir, parent.readonly, config.temporary || parent.temporary, config.unique, config.comparator)?;
+        let database = Arc::new(db);
+
+        p_database.register_listener(database.clone(), config.creator)?;
 
         Ok(Self { 
-            database: Arc::new(db), 
+            database, 
             parent, 
             listeners: p_database.listeners.clone() 
         })
