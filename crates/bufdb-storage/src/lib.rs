@@ -1,9 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
-use bufdb_api::config::TableConfig;
 use bufdb_api::error::Result;
-use bufdb_api::model::IndexDefine;
 use entry::BufferEntry;
 
 pub mod entry;
@@ -54,7 +52,7 @@ pub trait KeyComparator : Debug {
     fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<Ordering>;
 }
 
-pub trait KeyCreator : Debug {
+pub trait KeyCreator : Debug + 'static {
     fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
 }
 

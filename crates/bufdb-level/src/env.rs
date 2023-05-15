@@ -60,7 +60,7 @@ impl Environment for LevelDBEnv {
     }
 
     fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_api::error::Result<Self::SDATABASE> {
-        todo!()
+        SecondaryDatabase::new(database, name, config)
     }
 
     fn drop_database(&mut self, name: &str) -> bufdb_api::error::Result<()> {

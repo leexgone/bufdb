@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::path::Path;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -11,9 +11,9 @@ use bufdb_storage::KeyComparator;
 use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
 use bufdb_storage::entry::BufferEntry;
-use leveldb::comparator::Comparator;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
+use leveldb::iterator::Iterator;
 use leveldb::kv::KV;
 use leveldb::options::Options;
 use leveldb::options::ReadOptions;
@@ -24,6 +24,7 @@ use crate::comparator::IDXComparator;
 use crate::comparator::PKComparator;
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
+use crate::suffix::append_suffix;
 
 macro_rules! read_options {
     () => {
@@ -95,6 +96,10 @@ impl DBImpl {
         self.db.delete(WriteOptions::new(), key)
             .map_err(|e| db_error!(write => e))
     }
+
+    fn iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> Result<Iterator<'a, BufferEntry>> {
+        Ok(self.db.iter(options))
+    }
 }
 
 impl Display for DBImpl {
@@ -131,7 +136,41 @@ struct IndexListener {
 
 impl IndexListener {
     fn init(&self, pdb: &Arc<DBImpl>) -> Result<()> {
-        todo!()
+        if self.idb.is_empty()? {
+            if self.idb.unique {
+                self.init_pk(pdb)
+            } else {
+                self.init_idx(pdb)
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    fn init_pk(&self, pdb: &Arc<DBImpl>) -> Result<()> {
+        for (key, data) in pdb.iter(read_options!(quick))? {
+            let data = BufferEntry::from(data);
+            if let Some(skey) = self.creator.create_key(&key, &data)? {
+                self.idb.put(&skey, &key)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn init_idx(&self, pdb: &Arc<DBImpl>) -> Result<()> {
+        let mut id = 0u32;
+
+        for (key, data) in pdb.iter(read_options!(quick))? {
+            let data = BufferEntry::from(data);
+            if let Some(mut skey) = self.creator.create_key(&key, &data)? {
+                id += 1;
+                append_suffix(&mut skey, id);
+                self.idb.put(&skey, &key)?;
+            }
+        };
+
+        Ok(())
     }
 }
 
@@ -139,6 +178,7 @@ impl IndexListener {
 pub struct PrimaryDatabase {
     database: Arc<DBImpl>,
     listeners: Arc<RwLock<Vec<IndexListener>>>,
+    marker: PhantomData<dyn KeyCreator>,
 }
 
 impl PrimaryDatabase {
@@ -148,25 +188,24 @@ impl PrimaryDatabase {
         Ok(Self { 
             database: Arc::new(database),
             listeners: Arc::new(RwLock::new(Vec::new())),
+            marker: PhantomData,
         })
     }
 
     fn register_listener<G: KeyCreator>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
         let listener = IndexListener {
             idb,
-            creator: Box::new(creator)
+            creator: Box::new(creator),
         };
 
         listener.init(&self.database)?;
 
-        let mut listeners = self.listeners.write().unwrap();
-        listeners.push(listener);
+        {
+            let mut listeners = self.listeners.write().unwrap();
+            listeners.push(listener);
+        }
 
         Ok(())
-    }
-
-    fn unregister_listener(&self, idb: &Arc<DBImpl>) -> Result<()> {
-        todo!()
     }
 }
 
@@ -229,25 +268,40 @@ impl SecondaryDatabase {
     }
 }
 
+impl Drop for SecondaryDatabase {
+    fn drop(&mut self) {
+        {
+            let mut listeners = self.listeners.write().unwrap();
+            listeners.retain(|x| x.idb != self.database);
+        }
+    }
+}
+
 impl bufdb_storage::Database<IDXCursor> for SecondaryDatabase {
     fn count(&self) -> bufdb_api::error::Result<usize> {
-        todo!()
+        self.database.count()
     }
 
     fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<()> {
-        todo!()
+        self.database.put(key, data)
     }
 
     fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
-        todo!()
+        self.database.get(key)
     }
 
     fn delete(&self, key: &BufferEntry) -> Result<()> {
-        todo!()
+        self.database.delete(key)
     }
 
     fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
-        todo!()
+        let data = self.database.get(key)?;
+        if data.is_some() {
+            self.database.delete(key)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     fn open_cursor(&self) -> bufdb_api::error::Result<IDXCursor> {
