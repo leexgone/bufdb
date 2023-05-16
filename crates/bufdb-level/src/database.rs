@@ -25,7 +25,7 @@ use crate::comparator::IDXComparator;
 use crate::comparator::PKComparator;
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
-use crate::suffix::append_suffix;
+use crate::suffix::write_suffix;
 
 macro_rules! read_options {
     () => {
@@ -132,15 +132,19 @@ impl Debug for DBImpl {
 struct IndexListener {
     idb: Arc<DBImpl>,
     creator: Box<dyn KeyCreator>,
+    on_put: fn (&Self, &BufferEntry, &BufferEntry) -> Result<()>,
+    on_delete: fn (&Self, &BufferEntry, &BufferEntry) -> Result<()>,
 }
 
 impl IndexListener {
     pub fn new<G: KeyCreator>(database: Arc<DBImpl>, creator: G) -> Self {
-        // let unique = database.unique;
+        let unique = database.unique;
 
         Self { 
             idb: database, 
             creator: Box::new(creator), 
+            on_put: if unique { Self::put_pk } else { Self::put_idx },
+            on_delete: if unique { Self::delete_pk } else { Self::delete_idx },
         }
     }
 
@@ -174,12 +178,38 @@ impl IndexListener {
             let data = SliceEntry::new(&data);
             if let Some(mut skey) = self.creator.create_key(&key.as_slice_entry(), &data)? {
                 id += 1;
-                append_suffix(&mut skey, id);
+                write_suffix(&mut skey, id);
                 self.idb.put(&skey, &key)?;
             }
         };
 
         Ok(())
+    }
+
+    pub fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        let put_fn = &self.on_put;
+        put_fn(self, key, data)
+    }
+
+    fn put_pk(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        todo!()
+    }
+
+    fn put_idx(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        todo!()
+    }
+
+    pub fn delete(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        let del_fn = &self.on_delete;
+        del_fn(self, key, data)
+    }
+
+    fn delete_pk(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        todo!()
+    }
+
+    fn delete_idx(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+        todo!()
     }
 }
 
@@ -218,9 +248,18 @@ impl PrimaryDatabase {
         Ok(())
     }
 
-    fn is_listened(&self) -> bool {
-        let listeners = self.listeners.read().unwrap();
-        !listeners.is_empty()
+    // fn is_listened(&self) -> bool {
+    //     let listeners = self.listeners.read().unwrap();
+    //     !listeners.is_empty()
+    // }
+}
+
+macro_rules! lock_db {
+    ($db: ident) => {
+        $db.listeners.read().unwrap()
+    };
+    ($db: ident for write) => {
+        $db.listeners.write().unwrap()
     }
 }
 
@@ -230,7 +269,27 @@ impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
     }
 
     fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<()> {
-        self.database.put(key, data)
+        let listeners = lock_db!(self);
+
+        if !listeners.is_empty() {
+            if let Some(raw_data) = self.database.get(key)? {
+                if data != &raw_data {
+                    for listener in listeners.iter() {
+                        listener.delete(key, &raw_data)?;
+                    }
+                }
+            }
+        }
+
+        self.database.put(key, data)?;
+
+        if !listeners.is_empty() {
+            for listener in listeners.iter() {
+                listener.put(key, data)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
@@ -238,13 +297,36 @@ impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
     }
 
     fn delete(&self, key: &BufferEntry) -> Result<()> {
-        self.database.delete(key)
+        let listeners = lock_db!(self);
+
+        let found = if listeners.is_empty() {
+            None
+        } else {
+            self.database.get(key)?
+        };
+
+        self.database.delete(key)?;
+
+        if let Some(data) = found {
+            for listener in listeners.iter() {
+                listener.delete(key, &data)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
-        let data = self.database.get(key)?;
-        if data.is_some() {
+        let found = self.database.get(key)?;
+        if let Some(data) = found {
+            let listeners = lock_db!(self);
+
             self.database.delete(key)?;
+
+            for listener in listeners.iter() {
+                listener.delete(key, &data)?;
+            }
+
             Ok(true)
         } else {
             Ok(false)

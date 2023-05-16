@@ -231,6 +231,12 @@ impl <'a> AsRef<[u8]> for SliceEntry<'a> {
     }
 }
 
+impl <'a> Into<BufferInput<'a>> for &'a SliceEntry<'a> {
+    fn into(self) -> BufferInput<'a> {
+        self.as_input()
+    }
+}
+
 impl <'a> PartialEq for SliceEntry<'a> {
     fn eq(&self, other: &Self) -> bool {
         if self.size() == other.size() {
