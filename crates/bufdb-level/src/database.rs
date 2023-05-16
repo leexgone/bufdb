@@ -206,10 +206,7 @@ impl PrimaryDatabase {
     }
 
     fn register_listener<G: KeyCreator>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
-        let listener = IndexListener {
-            idb,
-            creator: Box::new(creator),
-        };
+        let listener = IndexListener::new(idb, creator);
 
         listener.init(&self.database)?;
 
