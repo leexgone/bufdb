@@ -3,6 +3,8 @@ use std::fmt::Debug;
 
 use bufdb_api::error::Result;
 use entry::BufferEntry;
+use entry::Entry;
+use entry::SliceEntry;
 
 pub mod entry;
 pub mod io;
@@ -49,11 +51,11 @@ pub trait Environment {
 }
 
 pub trait KeyComparator : Debug {
-    fn compare(&self, key1: &BufferEntry, key2: &BufferEntry) -> Result<Ordering>;
+    fn compare<T: Entry>(&self, key1: &T, key2: &T) -> Result<Ordering>;
 }
 
 pub trait KeyCreator : Debug + 'static {
-    fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
+    fn create_key(&self, key: &SliceEntry, data: &SliceEntry) -> Result<Option<BufferEntry>>;
 }
 
 pub struct DatabaseConfig<C: KeyComparator> {

@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -11,6 +10,8 @@ use bufdb_storage::KeyComparator;
 use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
 use bufdb_storage::entry::BufferEntry;
+use bufdb_storage::entry::Entry;
+use bufdb_storage::entry::SliceEntry;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
 use leveldb::iterator::Iterator;
@@ -128,14 +129,22 @@ impl Debug for DBImpl {
     }
 }
 
-#[derive(Debug)]
 struct IndexListener {
     idb: Arc<DBImpl>,
     creator: Box<dyn KeyCreator>,
 }
 
 impl IndexListener {
-    fn init(&self, pdb: &Arc<DBImpl>) -> Result<()> {
+    pub fn new<G: KeyCreator>(database: Arc<DBImpl>, creator: G) -> Self {
+        // let unique = database.unique;
+
+        Self { 
+            idb: database, 
+            creator: Box::new(creator), 
+        }
+    }
+
+    pub fn init(&self, pdb: &Arc<DBImpl>) -> Result<()> {
         if self.idb.is_empty()? {
             if self.idb.unique {
                 self.init_pk(pdb)
@@ -149,8 +158,8 @@ impl IndexListener {
 
     fn init_pk(&self, pdb: &Arc<DBImpl>) -> Result<()> {
         for (key, data) in pdb.iter(read_options!(quick))? {
-            let data = BufferEntry::from(data);
-            if let Some(skey) = self.creator.create_key(&key, &data)? {
+            let data = SliceEntry::new(&data);
+            if let Some(skey) = self.creator.create_key(&key.as_slice_entry(), &data)? {
                 self.idb.put(&skey, &key)?;
             }
         }
@@ -162,8 +171,8 @@ impl IndexListener {
         let mut id = 0u32;
 
         for (key, data) in pdb.iter(read_options!(quick))? {
-            let data = BufferEntry::from(data);
-            if let Some(mut skey) = self.creator.create_key(&key, &data)? {
+            let data = SliceEntry::new(&data);
+            if let Some(mut skey) = self.creator.create_key(&key.as_slice_entry(), &data)? {
                 id += 1;
                 append_suffix(&mut skey, id);
                 self.idb.put(&skey, &key)?;
@@ -174,11 +183,16 @@ impl IndexListener {
     }
 }
 
+impl Debug for IndexListener {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IndexListener").field("idb", &self.idb).field("creator", &self.creator).finish()
+    }
+}
+
 #[derive(Debug)]
 pub struct PrimaryDatabase {
     database: Arc<DBImpl>,
     listeners: Arc<RwLock<Vec<IndexListener>>>,
-    marker: PhantomData<dyn KeyCreator>,
 }
 
 impl PrimaryDatabase {
@@ -188,7 +202,6 @@ impl PrimaryDatabase {
         Ok(Self { 
             database: Arc::new(database),
             listeners: Arc::new(RwLock::new(Vec::new())),
-            marker: PhantomData,
         })
     }
 
@@ -206,6 +219,11 @@ impl PrimaryDatabase {
         }
 
         Ok(())
+    }
+
+    fn is_listened(&self) -> bool {
+        let listeners = self.listeners.read().unwrap();
+        !listeners.is_empty()
     }
 }
 
