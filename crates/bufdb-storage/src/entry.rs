@@ -80,6 +80,14 @@ impl BufferEntry {
         self.data = data;
     }
 
+    pub fn set_len(&mut self, len: usize) {
+        if len > self.data.len() {
+            self.data.resize(len, 0);
+        }
+
+        self.len = len;
+    }
+
     pub fn as_slice_entry(&self) -> SliceEntry {
         SliceEntry::new_off(self.as_ref(), self.off, self.size())
     }
@@ -146,7 +154,7 @@ impl <'a> Into<BufferInput<'a>> for &'a BufferEntry {
 
 impl Into<BufferOutput> for BufferEntry {
     fn into(self) -> BufferOutput {
-        BufferOutput::new_from_vec(self.data, self.off)
+        BufferOutput::new_from_vec(self.data, self.off, self.off)
     }
 }
 

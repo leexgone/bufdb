@@ -4,7 +4,6 @@ use std::fmt::Debug;
 use bufdb_api::error::Result;
 use entry::BufferEntry;
 use entry::Entry;
-use entry::SliceEntry;
 
 pub mod entry;
 pub mod io;
@@ -55,7 +54,7 @@ pub trait KeyComparator : Debug {
 }
 
 pub trait KeyCreator : Debug + 'static {
-    fn create_key(&self, key: &SliceEntry, data: &SliceEntry) -> Result<Option<BufferEntry>>;
+    fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
 }
 
 pub struct DatabaseConfig<C: KeyComparator> {

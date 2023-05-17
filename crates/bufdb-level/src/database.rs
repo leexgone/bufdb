@@ -11,7 +11,6 @@ use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
 use bufdb_storage::entry::BufferEntry;
 use bufdb_storage::entry::Entry;
-use bufdb_storage::entry::SliceEntry;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
 use leveldb::iterator::Iterator;
@@ -25,7 +24,7 @@ use crate::comparator::IDXComparator;
 use crate::comparator::PKComparator;
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
-use crate::suffix::write_suffix;
+use crate::suffix::append_suffix;
 
 macro_rules! read_options {
     () => {
@@ -162,8 +161,8 @@ impl IndexListener {
 
     fn init_pk(&self, pdb: &Arc<DBImpl>) -> Result<()> {
         for (key, data) in pdb.iter(read_options!(quick))? {
-            let data = SliceEntry::new(&data);
-            if let Some(skey) = self.creator.create_key(&key.as_slice_entry(), &data)? {
+            let data = BufferEntry::from(data);
+            if let Some(skey) = self.creator.create_key(&key, &data)? {
                 self.idb.put(&skey, &key)?;
             }
         }
@@ -175,10 +174,10 @@ impl IndexListener {
         let mut id = 0u32;
 
         for (key, data) in pdb.iter(read_options!(quick))? {
-            let data = SliceEntry::new(&data);
-            if let Some(mut skey) = self.creator.create_key(&key.as_slice_entry(), &data)? {
+            let data = BufferEntry::from(data);
+            if let Some(skey) = self.creator.create_key(&key, &data)? {
                 id += 1;
-                write_suffix(&mut skey, id);
+                let skey = append_suffix(skey, id)?;
                 self.idb.put(&skey, &key)?;
             }
         };
@@ -225,6 +224,15 @@ pub struct PrimaryDatabase {
     listeners: Arc<RwLock<Vec<IndexListener>>>,
 }
 
+macro_rules! lock_db {
+    ($db: ident) => {
+        $db.listeners.read().unwrap()
+    };
+    ($db: ident => write) => {
+        $db.listeners.write().unwrap()
+    }
+}
+
 impl PrimaryDatabase {
     pub fn new<C: KeyComparator>(name: &str, dir: PathBuf, readonly: bool, temporary: bool, comparator: C) -> Result<Self> {
         let database = DBImpl::new(name, dir, readonly, temporary, true, comparator)?;
@@ -236,30 +244,14 @@ impl PrimaryDatabase {
     }
 
     fn register_listener<G: KeyCreator>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
-        let listener = IndexListener::new(idb, creator);
+        let mut listeners = lock_db!(self => write);
 
+        let listener = IndexListener::new(idb, creator);
         listener.init(&self.database)?;
 
-        {
-            let mut listeners = self.listeners.write().unwrap();
-            listeners.push(listener);
-        }
+        listeners.push(listener);
 
         Ok(())
-    }
-
-    // fn is_listened(&self) -> bool {
-    //     let listeners = self.listeners.read().unwrap();
-    //     !listeners.is_empty()
-    // }
-}
-
-macro_rules! lock_db {
-    ($db: ident) => {
-        $db.listeners.read().unwrap()
-    };
-    ($db: ident for write) => {
-        $db.listeners.write().unwrap()
     }
 }
 
@@ -299,33 +291,28 @@ impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
     fn delete(&self, key: &BufferEntry) -> Result<()> {
         let listeners = lock_db!(self);
 
-        let found = if listeners.is_empty() {
-            None
-        } else {
-            self.database.get(key)?
-        };
-
-        self.database.delete(key)?;
-
-        if let Some(data) = found {
+        if listeners.is_empty() {
+            self.database.delete(key)
+        } else if let Some(data) = self.database.get(key)? {
             for listener in listeners.iter() {
                 listener.delete(key, &data)?;
             }
-        }
 
-        Ok(())
+            self.database.delete(key)
+        } else {
+            Ok(())
+        }
     }
 
     fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
-        let found = self.database.get(key)?;
-        if let Some(data) = found {
+        if let Some(data) = self.database.get(key)? {
             let listeners = lock_db!(self);
-
-            self.database.delete(key)?;
 
             for listener in listeners.iter() {
                 listener.delete(key, &data)?;
             }
+
+            self.database.delete(key)?;
 
             Ok(true)
         } else {
