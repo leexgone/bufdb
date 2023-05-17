@@ -4,7 +4,7 @@ use failure::Context;
 use failure::Fail;
 
 /// Enumerates error kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Fail, Default)]
+#[derive(Debug, Fail, Default)]
 pub enum ErrorKind {
     #[default]
     #[fail(display = "Unknown error")]
@@ -27,6 +27,8 @@ pub enum ErrorKind {
     ParseBool(#[cause] std::str::ParseBoolError),
     #[fail(display = "Parse datetime error")]
     ParseDateTime(#[cause] chrono::format::ParseError),
+    #[fail(display = "IO error")]
+    IO(#[cause] std::io::Error),
     #[fail(display = "database open error")]
     DBOpen(#[cause] PhantomError),
     #[fail(display = "database read error")]
@@ -118,6 +120,12 @@ impl From<std::str::ParseBoolError> for Error {
 impl From<chrono::format::ParseError> for Error {
     fn from(err: chrono::format::ParseError) -> Self {
         ErrorKind::ParseDateTime(err).into()
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        ErrorKind::IO(err).into()
     }
 }
 

@@ -14,6 +14,10 @@ pub trait Entry : AsRef<[u8]> {
 
     fn size(&self) -> usize;
 
+    fn is_empty(&self) -> bool {
+        self.off() == self.len()
+    }
+
     fn slice(&self) -> &[u8];
 
     fn as_input(&self) -> BufferInput {

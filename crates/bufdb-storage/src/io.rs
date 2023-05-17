@@ -20,6 +20,7 @@ use std::io::Result;
 use std::io::Seek;
 use std::io::Write;
 
+use crate::entry::BufferEntry;
 use crate::packed_int::PackedI32;
 use crate::packed_int::PackedI64;
 
@@ -456,5 +457,12 @@ impl Output for BufferOutput {
         let len = val.write(&mut self.data[self.pos..])?;
         self.pos = self.pos + len;
         Ok(())
+    }
+}
+
+impl Into<BufferEntry> for BufferOutput {
+    fn into(self) -> BufferEntry {
+        let size = self.size();
+        BufferEntry::new(self.data, self.off, size)
     }
 }
