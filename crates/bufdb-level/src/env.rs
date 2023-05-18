@@ -1,3 +1,5 @@
+use std::fs::remove_dir_all;
+use std::fs::rename;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -45,11 +47,17 @@ impl LevelDBEnv {
         dir.push(Path::new(name));
         dir
     }
+
+    fn clear_database(&self, name: &str) -> Result<()> {
+        let dir = self.get_data_dir(name);
+        remove_dir_all(dir)?;
+        Ok(())
+    }
 }
 
-impl Environment for LevelDBEnv {
-    type CURSOR = PKCursor;
-    type SCUROSR = IDXCursor;
+impl <'a> Environment<'a> for LevelDBEnv {
+    type CURSOR = PKCursor<'a>;
+    type SCUROSR = IDXCursor<'a>;
     type DATABASE = PrimaryDatabase;
     type SDATABASE = SecondaryDatabase;
 
@@ -64,18 +72,21 @@ impl Environment for LevelDBEnv {
     }
 
     fn drop_database(&mut self, name: &str) -> bufdb_api::error::Result<()> {
-        todo!()
+        self.clear_database(name)
     }
 
     fn drop_secondary_database(&mut self, name: &str) -> bufdb_api::error::Result<()> {
-        todo!()
+        self.clear_database(name)
     }
 
     fn truncate_database(&mut self, name: &str) -> bufdb_api::error::Result<()> {
-        todo!()
+        self.clear_database(name)
     }
 
     fn rename_database(&mut self, raw_name: &str, new_name: &str) -> bufdb_api::error::Result<()> {
-        todo!()
+        let raw_dir = self.get_data_dir(raw_name);
+        let new_dir = self.get_data_dir(new_name);
+        rename(raw_dir, new_dir)?;
+        Ok(())
     }
 }

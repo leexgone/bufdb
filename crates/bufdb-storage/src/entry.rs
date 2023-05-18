@@ -84,6 +84,12 @@ impl BufferEntry {
         self.data = data;
     }
 
+    pub fn set_buffer(&mut self, buffer: BufferEntry) {
+        self.data = buffer.data;
+        self.off = buffer.off;
+        self.len = buffer.len;
+    }
+
     pub fn set_len(&mut self, len: usize) {
         if len > self.data.len() {
             self.data.resize(len, 0);

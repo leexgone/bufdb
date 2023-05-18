@@ -9,37 +9,36 @@ pub mod entry;
 pub mod io;
 pub(crate) mod packed_int;
 
-pub trait Database<C: Cursor> {
+pub trait Cursor<'a> {
+    fn search(&mut self, key: &BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn search_range(&mut self, key: &mut BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn next(&mut self, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn next_dup(&mut self, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn skip(&mut self, count: usize, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+}
+
+pub trait SecondaryCursor<'a> : Cursor<'a> {
+    fn s_search(&mut self, key: &BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn s_search_range(&mut self, key: &mut BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn s_next(&mut self, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn s_next_dup(&mut self, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+    fn s_skip(&mut self, count: usize, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
+}
+
+pub trait Database<'a, C: Cursor<'a>> {
     fn count(&self) -> Result<usize>;
     fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;
     fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>>;
     fn delete(&self, key: &BufferEntry) -> Result<()>;
     fn delete_exist(&self, key: &BufferEntry) -> Result<bool>;
-    fn open_cursor(&self) -> Result<C>;
+    fn open_cursor(&'a self) -> Result<C>;
 }
 
-pub trait Cursor {
-    fn search(&self, key: &BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn search_range(&self, key: &mut BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn next(&self, key: &mut BufferEntry, data: &mut BufferEntry) -> Result<bool>;
-    fn next_dup(&self, key: &mut BufferEntry, data: &mut BufferEntry) -> Result<bool>;
-    fn skip(&self, count: usize, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn delete(&mut self, key: &BufferEntry) -> Result<bool>;
-    fn update(&mut self, key: &BufferEntry, data: &BufferEntry) -> Result<bool>;
-}
-
-pub trait SecondaryCursor : Cursor {
-    fn s_search(&self, key: &BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn s_search_range(&self, key: &mut BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn s_next(&self, key: &mut BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
-    fn s_next_dup(&self, key: &mut BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
-}
-
-pub trait Environment {
-    type CURSOR: Cursor;
-    type SCUROSR: SecondaryCursor;
-    type DATABASE: Database<Self::CURSOR>;
-    type SDATABASE: Database<Self::SCUROSR>;
+pub trait Environment<'a> {
+    type CURSOR: Cursor<'a>;
+    type SCUROSR: SecondaryCursor<'a>;
+    type DATABASE: Database<'a, Self::CURSOR>;
+    type SDATABASE: Database<'a, Self::SCUROSR>;
 
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
     fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;

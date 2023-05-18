@@ -14,6 +14,8 @@ use bufdb_storage::entry::Entry;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
 use leveldb::iterator::Iterator;
+use leveldb::iterator::KeyIterator;
+use leveldb::iterator::LevelDBIterator;
 use leveldb::kv::KV;
 use leveldb::options::Options;
 use leveldb::options::ReadOptions;
@@ -25,13 +27,16 @@ use crate::comparator::PKComparator;
 use crate::cursor::IDXCursor;
 use crate::cursor::PKCursor;
 use crate::suffix::append_suffix;
+use crate::suffix::reset_suffix;
+use crate::suffix::unwrap_suffix;
 
+#[macro_export]
 macro_rules! read_options {
     () => {
-        ReadOptions::new()
+        leveldb::options::ReadOptions::new()
     };
     (quick) => {
-        ReadOptions { verify_checksums: false, fill_cache: false, snapshot: None }
+        leveldb::options::ReadOptions { verify_checksums: false, fill_cache: false, snapshot: None }
     };
 }
 
@@ -97,8 +102,12 @@ impl DBImpl {
             .map_err(|e| db_error!(write => e))
     }
 
-    fn iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> Result<Iterator<'a, BufferEntry>> {
-        Ok(self.db.iter(options))
+    pub fn iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> Iterator<'a, BufferEntry> {
+        self.db.iter(options)
+    }
+
+    fn key_iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> KeyIterator<'a, BufferEntry> {
+        self.db.keys_iter(options)
     }
 }
 
@@ -160,7 +169,7 @@ impl IndexListener {
     }
 
     fn init_pk(&self, pdb: &Arc<DBImpl>) -> Result<()> {
-        for (key, data) in pdb.iter(read_options!(quick))? {
+        for (key, data) in pdb.iter(read_options!(quick)) {
             let data = BufferEntry::from(data);
             if let Some(skey) = self.creator.create_key(&key, &data)? {
                 self.idb.put(&skey, &key)?;
@@ -173,7 +182,7 @@ impl IndexListener {
     fn init_idx(&self, pdb: &Arc<DBImpl>) -> Result<()> {
         let mut id = 0u32;
 
-        for (key, data) in pdb.iter(read_options!(quick))? {
+        for (key, data) in pdb.iter(read_options!(quick)) {
             let data = BufferEntry::from(data);
             if let Some(skey) = self.creator.create_key(&key, &data)? {
                 id += 1;
@@ -191,11 +200,38 @@ impl IndexListener {
     }
 
     fn put_pk(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
-        todo!()
+        if let Some(ref skey) = self.creator.create_key(key, data)? {
+            self.idb.put(skey, key)
+        } else {
+            Ok(())
+        }
     }
 
     fn put_idx(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
-        todo!()
+        if let Some(skey) = self.creator.create_key(key, data)? {
+            let len = skey.size();
+            let skey = append_suffix(skey, 0)?;
+            let s_slice = skey.left(len)?;
+
+            let order = {
+                let mut iter = self.idb.key_iter(read_options!()).from(&skey);
+                if let Some(n_skey) = iter.next() {
+                    let (n_slice, n) = unwrap_suffix(&n_skey)?;
+                    if s_slice == n_slice {
+                        n + 1
+                    } else {
+                        1u32
+                    }
+                } else {
+                    1u32
+                }
+            };
+
+            let skey = reset_suffix(skey, order)?;
+            self.idb.put(&skey, key)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn delete(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
@@ -204,11 +240,44 @@ impl IndexListener {
     }
 
     fn delete_pk(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
-        todo!()
+        if let Some(skey) = self.creator.create_key(key, data)? {
+            self.idb.delete(&skey)
+        } else {
+            Ok(())
+        }
     }
 
     fn delete_idx(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
-        todo!()
+        if let Some(skey) = self.creator.create_key(key, data)? {
+            let len = skey.size();
+            let skey = append_suffix(skey, 0)?;
+            let slice = skey.left(len)?;
+
+            let mut found: Option<BufferEntry> = None;
+            let mut order = u32::MAX;
+            for (n_key, n_data) in self.idb.iter(read_options!()).from(&skey) {
+                let (n_slice, n) = unwrap_suffix(&n_key)?;
+                if n >= order || slice != n_slice {
+                    break;
+                }
+
+                let n_data = BufferEntry::from(n_data);
+                if *key == n_data {
+                    found = Some(n_key);
+                    break;
+                }
+
+                order = n;
+            }
+
+            if let Some(ref s_key) = found {
+                self.idb.delete(s_key)
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -255,7 +324,7 @@ impl PrimaryDatabase {
     }
 }
 
-impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
+impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase {
     fn count(&self) -> bufdb_api::error::Result<usize> {
         self.database.count()
     }
@@ -320,8 +389,8 @@ impl bufdb_storage::Database<PKCursor> for PrimaryDatabase {
         }
     }
 
-    fn open_cursor(&self) -> bufdb_api::error::Result<PKCursor> {
-        todo!()
+    fn open_cursor(&'a self) -> bufdb_api::error::Result<PKCursor<'a>> {
+        Ok(PKCursor::new(&self.database))
     }
 }
 
@@ -354,14 +423,12 @@ impl SecondaryDatabase {
 
 impl Drop for SecondaryDatabase {
     fn drop(&mut self) {
-        {
-            let mut listeners = self.listeners.write().unwrap();
-            listeners.retain(|x| x.idb != self.database);
-        }
+        let mut listeners = self.listeners.write().unwrap();
+        listeners.retain(|x| x.idb != self.database);
     }
 }
 
-impl bufdb_storage::Database<IDXCursor> for SecondaryDatabase {
+impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase {
     fn count(&self) -> bufdb_api::error::Result<usize> {
         self.database.count()
     }
@@ -389,7 +456,7 @@ impl bufdb_storage::Database<IDXCursor> for SecondaryDatabase {
     }
 
     fn open_cursor(&self) -> bufdb_api::error::Result<IDXCursor> {
-        todo!()
+        Ok(IDXCursor::new(&self.parent, &self.database))
     }
 }
 

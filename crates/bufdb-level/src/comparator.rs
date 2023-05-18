@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use bufdb_storage::KeyComparator;
 use bufdb_storage::entry::BufferEntry;
 use leveldb::comparator::Comparator;
@@ -46,7 +48,13 @@ impl <C: KeyComparator> Comparator for IDXComparator<C> {
 
         let c = self.0.compare(&key1, &key2).unwrap();
         if c.is_eq() {
-            ord1.cmp(&ord2).reverse()
+            if ord1 == 0 {
+                Ordering::Less
+            } else if ord2 == 0 {
+                Ordering::Greater
+            } else {
+                ord1.cmp(&ord2).reverse()
+            }
         } else {
             c
         }
