@@ -141,6 +141,12 @@ impl PhantomError {
             message: if message.is_empty() { None } else { Some(message) }
         }        
     }
+
+    pub fn from_str(msg: &str) -> Self {
+        Self {
+            message: Some(msg.into())
+        }
+    }
 }
 
 impl Display for PhantomError {
@@ -179,5 +185,24 @@ macro_rules! db_error {
     };
     ($err: expr) => {
         bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOther(bufdb_api::error::PhantomError::from($err)))
-    }
+    };
+}
+
+#[macro_export]
+macro_rules! db_error_s {
+    (open => $err: literal) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOpen(bufdb_api::error::PhantomError::from_str($err)))
+    };
+     (read => $err: literal) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBRead(bufdb_api::error::PhantomError::from_str($err)))
+    };
+    (write => $err: literal) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBWrite(bufdb_api::error::PhantomError::from_str($err)))
+    };
+    (close => $err: literal) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBClose(bufdb_api::error::PhantomError::from_str($err)))
+    };
+    ($err: literal) => {
+        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOther(bufdb_api::error::PhantomError::from_str($err)))
+    };
 }

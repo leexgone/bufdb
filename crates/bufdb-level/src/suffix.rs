@@ -65,6 +65,11 @@ pub fn size_of_suffix<T: Entry>(entry: &T) -> usize {
     }
 }
 
+pub fn trucate_suffix(buf: &BufferEntry) -> Result<SliceEntry> {
+    let n = size_of_suffix(buf);
+    buf.left(buf.size() - n)
+}
+
 pub fn unwrap_suffix(buf: &BufferEntry) -> Result<(SliceEntry, u32)> {
     let mut iter = buf.slice().iter().rev();
 

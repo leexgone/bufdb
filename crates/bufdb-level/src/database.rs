@@ -76,28 +76,32 @@ impl DBImpl {
         })
     }
 
-    fn is_empty(&self) -> Result<bool> {
+    pub fn is_empty(&self) -> Result<bool> {
         let next = self.db.iter(read_options!(quick)).next();
         Ok(next.is_none())
     }
 
-    fn count(&self) -> Result<usize> {
+    pub fn unique(&self) -> bool {
+        self.unique
+    }
+
+    pub fn count(&self) -> Result<usize> {
         let count = self.db.iter(read_options!(quick)).count();
         Ok(count)
     }
 
-    fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
+    pub fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
         self.db.put(WriteOptions::new(), key, data.slice())
             .map_err(|e| db_error!(write => e))
     }
 
-    fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>> {
+    pub fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>> {
         self.db.get(ReadOptions::new(), key)
             .map(|data| data.map(|d| d.into()))
             .map_err(|e| db_error!(read => e))
     }
 
-    fn delete(&self, key: &BufferEntry) -> Result<()> {
+    pub fn delete(&self, key: &BufferEntry) -> Result<()> {
         self.db.delete(WriteOptions::new(), key)
             .map_err(|e| db_error!(write => e))
     }
