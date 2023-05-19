@@ -30,7 +30,7 @@ use crate::suffix::append_suffix;
 use crate::suffix::reset_suffix;
 use crate::suffix::unwrap_suffix;
 
-#[macro_export]
+// #[macro_export]
 macro_rules! read_options {
     () => {
         leveldb::options::ReadOptions::new()
@@ -141,20 +141,21 @@ impl Debug for DBImpl {
     }
 }
 
-struct IndexListener {
+struct IndexListener<'a> {
     idb: Arc<DBImpl>,
-    creator: Box<dyn KeyCreator>,
+    creator: Arc<dyn KeyCreator + 'a>,
     on_put: fn (&Self, &BufferEntry, &BufferEntry) -> Result<()>,
     on_delete: fn (&Self, &BufferEntry, &BufferEntry) -> Result<()>,
 }
 
-impl IndexListener {
-    pub fn new<G: KeyCreator>(database: Arc<DBImpl>, creator: G) -> Self {
+impl <'a> IndexListener<'a> {
+    pub fn new<G: KeyCreator + 'a>(database: Arc<DBImpl>, creator: G) -> Self {
         let unique = database.unique;
+        let creator =  Arc::new(creator);
 
         Self { 
             idb: database, 
-            creator: Box::new(creator), 
+            creator, 
             on_put: if unique { Self::put_pk } else { Self::put_idx },
             on_delete: if unique { Self::delete_pk } else { Self::delete_idx },
         }
@@ -285,16 +286,16 @@ impl IndexListener {
     }
 }
 
-impl Debug for IndexListener {
+impl <'a> Debug for IndexListener<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("IndexListener").field("idb", &self.idb).field("creator", &self.creator).finish()
     }
 }
 
 #[derive(Debug)]
-pub struct PrimaryDatabase {
+pub struct PrimaryDatabase<'a> {
     database: Arc<DBImpl>,
-    listeners: Arc<RwLock<Vec<IndexListener>>>,
+    listeners: Arc<RwLock<Vec<IndexListener<'a>>>>,
 }
 
 macro_rules! lock_db {
@@ -306,7 +307,7 @@ macro_rules! lock_db {
     }
 }
 
-impl PrimaryDatabase {
+impl <'a> PrimaryDatabase<'a> {
     pub fn new<C: KeyComparator>(name: &str, dir: PathBuf, readonly: bool, temporary: bool, comparator: C) -> Result<Self> {
         let database = DBImpl::new(name, dir, readonly, temporary, true, comparator)?;
 
@@ -316,7 +317,7 @@ impl PrimaryDatabase {
         })
     }
 
-    fn register_listener<G: KeyCreator>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
+    fn register_listener<G: KeyCreator + 'a>(&self, idb: Arc<DBImpl>, creator: G) -> Result<()> {
         let mut listeners = lock_db!(self => write);
 
         let listener = IndexListener::new(idb, creator);
@@ -328,7 +329,7 @@ impl PrimaryDatabase {
     }
 }
 
-impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase {
+impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase<'a> {
     fn count(&self) -> bufdb_api::error::Result<usize> {
         self.database.count()
     }
@@ -399,14 +400,14 @@ impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase {
 }
 
 #[derive(Debug)]
-pub struct SecondaryDatabase {
+pub struct SecondaryDatabase<'a> {
     database: Arc<DBImpl>,
     parent: Arc<DBImpl>,
-    listeners: Arc<RwLock<Vec<IndexListener>>>
+    listeners: Arc<RwLock<Vec<IndexListener<'a>>>>
 }
 
-impl SecondaryDatabase {
-    pub fn new<C: KeyComparator, G: KeyCreator>(p_database: &PrimaryDatabase, name: &str, config: SDatabaseConfig<C, G>) -> Result<SecondaryDatabase> {
+impl <'a> SecondaryDatabase<'a> {
+    pub fn new<C: KeyComparator, G: KeyCreator + 'a>(p_database: &PrimaryDatabase<'a>, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self> {
         let parent = p_database.database.clone();
 
         let mut dir = parent.dir.clone();
@@ -425,14 +426,14 @@ impl SecondaryDatabase {
     }
 }
 
-impl Drop for SecondaryDatabase {
+impl <'a> Drop for SecondaryDatabase<'a> {
     fn drop(&mut self) {
         let mut listeners = self.listeners.write().unwrap();
         listeners.retain(|x| x.idb != self.database);
     }
 }
 
-impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase {
+impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase<'a> {
     fn count(&self) -> bufdb_api::error::Result<usize> {
         self.database.count()
     }

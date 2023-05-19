@@ -2,11 +2,11 @@ use std::fmt::Display;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-use bufdb_api::datatype::ConvertTo;
-use bufdb_api::datatype::TimeStamp;
-use bufdb_api::datatype::Value;
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
+use crate::datatype::ConvertTo;
+use crate::datatype::TimeStamp;
+use crate::datatype::Value;
+use crate::error::ErrorKind;
+use crate::error::Result;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Record {
@@ -247,9 +247,9 @@ impl Display for Record {
 
 #[cfg(test)]
 mod tests {
-    use bufdb_api::datatype::ConvertTo;
-    use bufdb_api::datatype::TimeStamp;
-    use bufdb_api::datatype::Value;
+    use crate::datatype::ConvertTo;
+    use crate::datatype::TimeStamp;
+    use crate::datatype::Value;
 
     use super::Record;
 

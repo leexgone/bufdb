@@ -58,8 +58,8 @@ impl LevelDBEnv {
 impl <'a> Environment<'a> for LevelDBEnv {
     type CURSOR = PKCursor<'a>;
     type SCUROSR = IDXCursor<'a>;
-    type DATABASE = PrimaryDatabase;
-    type SDATABASE = SecondaryDatabase;
+    type DATABASE = PrimaryDatabase<'a>;
+    type SDATABASE = SecondaryDatabase<'a>;
 
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> bufdb_api::error::Result<Self::DATABASE> {
         let data_dir = self.get_data_dir(name);
@@ -67,7 +67,7 @@ impl <'a> Environment<'a> for LevelDBEnv {
         PrimaryDatabase::new(name, data_dir, config.readonly, config.temporary, config.comparator)
     }
 
-    fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_api::error::Result<Self::SDATABASE> {
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_api::error::Result<Self::SDATABASE> {
         SecondaryDatabase::new(database, name, config)
     }
 

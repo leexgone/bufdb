@@ -41,7 +41,7 @@ pub trait Environment<'a> {
     type SDATABASE: Database<'a, Self::SCUROSR>;
 
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
-    fn create_secondary_database<C: KeyComparator, G: KeyCreator>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
     fn drop_database(&mut self, name: &str) -> Result<()>;
     fn drop_secondary_database(&mut self, name: &str) -> Result<()>;
     fn truncate_database(&mut self, name: &str) -> Result<()>;
@@ -52,7 +52,7 @@ pub trait KeyComparator : Debug {
     fn compare<T: Entry>(&self, key1: &T, key2: &T) -> Result<Ordering>;
 }
 
-pub trait KeyCreator : Debug + 'static {
+pub trait KeyCreator : Debug {
     fn create_key(&self, key: &BufferEntry, data: &BufferEntry) -> Result<Option<BufferEntry>>;
 }
 
