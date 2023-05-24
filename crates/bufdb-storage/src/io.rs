@@ -319,7 +319,7 @@ impl BufferOutput {
 
     /// Retrieves the size of actual data. Excluding the heading data which is ignored by `offset.
     pub fn size(&self) -> usize {
-        self.data.len() - self.off
+        self.pos - self.off
     }
 
     /// Requires more storage.
@@ -464,5 +464,54 @@ impl Into<BufferEntry> for BufferOutput {
     fn into(self) -> BufferEntry {
         let size = self.size();
         BufferEntry::new(self.data, self.off, size)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::entry::BufferEntry;
+    use crate::io::Input;
+
+    use super::BufferInput;
+    use super::BufferOutput;
+    use super::Output;
+
+    #[test]
+    fn test_io() {
+        let mut output = BufferOutput::new();
+
+        output.write_str(None).unwrap();
+        output.write_str(Some("Hello")).unwrap();
+        output.write_u8(123u8).unwrap();
+        output.write_u16(12345u16).unwrap();
+        output.write_u32(1234567u32).unwrap();
+        output.write_u64(1234567890u64).unwrap();
+        output.write_i8(-123i8).unwrap();
+        output.write_i16(-12345i16).unwrap();
+        output.write_i32(-1234567i32).unwrap();
+        output.write_i64(-1234567890i64).unwrap();
+        output.write_f64(1234567.89f64).unwrap();
+        output.write_packed_i32(7654321i32).unwrap();
+        output.write_packed_i64(987654321i64).unwrap();
+
+        let buffer: BufferEntry = output.into();
+
+        let mut input: BufferInput = (&buffer).into();
+
+        assert_eq!(None, input.read_string().unwrap());
+        assert_eq!(Some(String::from("Hello")), input.read_string().unwrap());
+        assert_eq!(123u8, input.read_u8().unwrap());
+        assert_eq!(12345u16, input.read_u16().unwrap());
+        assert_eq!(1234567u32, input.read_u32().unwrap());
+        assert_eq!(1234567890u64, input.read_u64().unwrap());
+        assert_eq!(-123i8, input.read_i8().unwrap());
+        assert_eq!(-12345i16, input.read_i16().unwrap());
+        assert_eq!(-1234567i32, input.read_i32().unwrap());
+        assert_eq!(-1234567890i64, input.read_i64().unwrap());
+        assert_eq!(1234567.89f64, input.read_f64().unwrap());
+        assert_eq!(7654321i32, input.read_packed_i32().unwrap());
+        assert_eq!(987654321i64, input.read_packed_i64().unwrap());
+
+        assert!(input.eof());
     }
 }
