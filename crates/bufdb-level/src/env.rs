@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use bufdb_api::error::Result;
 use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
+use bufdb_storage::EnvironmentConfig;
 use bufdb_storage::KeyComparator;
 use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
@@ -22,14 +23,6 @@ pub struct LevelDBEnv {
 }
 
 impl LevelDBEnv {
-    pub fn new(dir: PathBuf, readonly: bool, temporary: bool) -> Result<Self> {
-        Ok(Self {
-            dir,
-            readonly,
-            temporary
-        })
-    }
-
     pub fn dir(&self) -> &Path {
         &self.dir
     }
@@ -60,6 +53,14 @@ impl <'a> Environment<'a> for LevelDBEnv {
     type SCUROSR = IDXCursor<'a>;
     type DATABASE = PrimaryDatabase<'a>;
     type SDATABASE = SecondaryDatabase<'a>;
+
+    fn new(config: EnvironmentConfig) -> Result<Self> {
+        Ok(Self {
+            dir: config.dir,
+            readonly: config.readonly,
+            temporary: config.temporary,
+        })
+    }
 
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> bufdb_api::error::Result<Self::DATABASE> {
         let data_dir = self.get_data_dir(name);

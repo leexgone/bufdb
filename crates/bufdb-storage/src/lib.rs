@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use bufdb_api::error::Result;
 use entry::BufferEntry;
@@ -34,12 +35,13 @@ pub trait Database<'a, C: PrimaryCursor<'a>> {
     fn open_cursor(&'a self) -> Result<C>;
 }
 
-pub trait Environment<'a> {
+pub trait Environment<'a> : Sized {
     type CURSOR: PrimaryCursor<'a>;
     type SCUROSR: SecondaryCursor<'a>;
     type DATABASE: Database<'a, Self::CURSOR>;
     type SDATABASE: Database<'a, Self::SCUROSR>;
 
+    fn new(config: EnvironmentConfig) -> Result<Self>;
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
     fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
     fn drop_database(&mut self, name: &str) -> Result<()>;
@@ -68,4 +70,20 @@ pub struct SDatabaseConfig<C: KeyComparator, G: KeyCreator> {
     pub unique: bool,
     pub comparator: C,
     pub creator: G
+}
+
+pub struct EnvironmentConfig {
+    pub dir: PathBuf,
+    pub readonly: bool,
+    pub temporary: bool,
+}
+
+pub trait StorageFactory<'a> : Copy + Clone {
+    type CURSOR: PrimaryCursor<'a>;
+    type SCUROSR: SecondaryCursor<'a>;
+    type DATABASE: Database<'a, Self::CURSOR>;
+    type SDATABASE: Database<'a, Self::SCUROSR>;
+    type ENVIRONMENT: Environment<'a>;
+
+    fn name(&self) -> &str;
 }
