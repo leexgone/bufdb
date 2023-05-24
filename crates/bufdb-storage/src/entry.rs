@@ -168,7 +168,6 @@ impl Into<BufferOutput> for BufferEntry {
     }
 }
 
-
 impl Key for BufferEntry {
     fn from_u8(key: &[u8]) -> Self {
         let data = Vec::from(key);
@@ -179,6 +178,7 @@ impl Key for BufferEntry {
         f(self.slice())
     }
 }
+
 impl PartialEq for BufferEntry {
     fn eq(&self, other: &Self) -> bool {
         if self.size() == other.size() {

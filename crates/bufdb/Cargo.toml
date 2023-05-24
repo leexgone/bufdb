@@ -15,11 +15,7 @@ categories = []
 
 [dependencies]
 
-# failure = "0.1.8"
-# strum = { version = "0.24.1", features = ["derive"] }
-# serde_json = "1.0.96"
-# serde = { version = "1.0.160", features = ["derive"] }
-# chrono = "0.4.24"
+lru = "0.10.0"
 bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
 bufdb-storage = { version = "0.0.1", path = "../bufdb-storage" }
 bufdb-level = { version = "0.0.1", path = "../bufdb-level" }
