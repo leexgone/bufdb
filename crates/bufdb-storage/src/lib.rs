@@ -9,7 +9,7 @@ pub mod entry;
 pub mod io;
 pub(crate) mod packed_int;
 
-pub trait Cursor<'a> {
+pub trait PrimaryCursor<'a> {
     fn search(&mut self, key: &BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
     fn search_range(&mut self, key: &mut BufferEntry, data: Option<&mut BufferEntry>) -> Result<bool>;
     fn next(&mut self, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
@@ -17,7 +17,7 @@ pub trait Cursor<'a> {
     fn skip(&mut self, count: usize, key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
 }
 
-pub trait SecondaryCursor<'a> : Cursor<'a> {
+pub trait SecondaryCursor<'a> : PrimaryCursor<'a> {
     fn s_search(&mut self, key: &BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
     fn s_search_range(&mut self, key: &mut BufferEntry, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
     fn s_next(&mut self, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
@@ -25,7 +25,7 @@ pub trait SecondaryCursor<'a> : Cursor<'a> {
     fn s_skip(&mut self, count: usize, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> Result<bool>;
 }
 
-pub trait Database<'a, C: Cursor<'a>> {
+pub trait Database<'a, C: PrimaryCursor<'a>> {
     fn count(&self) -> Result<usize>;
     fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()>;
     fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>>;
@@ -35,7 +35,7 @@ pub trait Database<'a, C: Cursor<'a>> {
 }
 
 pub trait Environment<'a> {
-    type CURSOR: Cursor<'a>;
+    type CURSOR: PrimaryCursor<'a>;
     type SCUROSR: SecondaryCursor<'a>;
     type DATABASE: Database<'a, Self::CURSOR>;
     type SDATABASE: Database<'a, Self::SCUROSR>;

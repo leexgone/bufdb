@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bufdb_api::db_error_s;
 use bufdb_api::error::Result;
-use bufdb_storage::Cursor;
+use bufdb_storage::PrimaryCursor;
 use bufdb_storage::SecondaryCursor;
 use bufdb_storage::entry::BufferEntry;
 use bufdb_storage::entry::Entry;
@@ -44,7 +44,7 @@ impl <'a> PKCursor<'a> {
     }
 }
 
-impl <'a> Cursor<'a> for PKCursor<'a> {
+impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
     fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
         self.iter.seek(key);
 
@@ -214,7 +214,7 @@ impl <'a> IDXCursor<'a> {
     }
 }
 
-impl <'a> Cursor<'a> for IDXCursor<'a> {
+impl <'a> PrimaryCursor<'a> for IDXCursor<'a> {
     fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
         self.s_search(key, data, None)
     }
