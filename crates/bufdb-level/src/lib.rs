@@ -1,4 +1,4 @@
-use bufdb_storage::StorageFactory;
+use bufdb_storage::StorageEngine;
 use cursor::IDXCursor;
 use cursor::PKCursor;
 use database::PrimaryDatabase;
@@ -13,9 +13,9 @@ pub(crate) mod comparator;
 pub(crate) mod suffix;
 
 #[derive(Debug, Clone, Copy)]
-pub struct LevelDBFactory {}
+pub struct LevelDBEngine {}
 
-impl <'a> StorageFactory<'a> for LevelDBFactory {
+impl <'a> StorageEngine<'a> for LevelDBEngine {
     type CURSOR = PKCursor<'a>;
     type SCUROSR = IDXCursor<'a>;
 
@@ -25,6 +25,6 @@ impl <'a> StorageFactory<'a> for LevelDBFactory {
     type ENVIRONMENT = LevelDBEnv;
 
     fn name(&self) -> &str {
-        "Level DB Factory"
+        "Level DB Engine"
     }
 }

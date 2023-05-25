@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use bufdb_level::LevelDBFactory;
-use bufdb_storage::StorageFactory;
+use bufdb_level::LevelDBEngine;
+use bufdb_storage::StorageEngine;
 
 pub struct Instance<'a> {
-    inst: Arc<InstImpl<'a, LevelDBFactory>>
+    inst: Arc<InstImpl<'a, LevelDBEngine>>
 }
 
-pub(crate) struct InstImpl<'a, F: StorageFactory<'a>> {
-    marker: PhantomData<&'a F>
+pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
+    _marker: PhantomData<&'a T>
 }

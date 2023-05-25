@@ -1,5 +1,5 @@
-use bufdb_storage::StorageFactory;
+use bufdb_storage::StorageEngine;
 
-pub(crate) struct TableImpl<'a, F: StorageFactory<'a>> {
+pub(crate) struct TableImpl<'a, F: StorageEngine<'a>> {
     db: F::DATABASE,
 }
