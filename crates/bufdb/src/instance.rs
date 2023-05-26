@@ -20,7 +20,7 @@ impl <'a> Instance<'a> {
 
 pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
     config: InstanceConfig,
-    schemas: CachePool<'a, SchemaImpl<'a, T>>,
+    schemas: CachePool<SchemaImpl<'a, T>>,
     _marker: PhantomData<&'a T>
 }
 

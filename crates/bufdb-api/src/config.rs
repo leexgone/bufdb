@@ -6,6 +6,14 @@ pub trait CacheConfig {
     fn max_cache(&self) -> Option<usize>;
     fn min_live_time(&self) -> Option<Duration>;
     fn max_idle_time(&self) -> Option<Duration>;
+
+    // fn cacheable(&self) -> bool {
+    //     if let Some(n) = self.max_cache() {
+    //         n > 0
+    //     } else {
+    //         false
+    //     }
+    // }
 }
 
 macro_rules! impl_cache_config {
