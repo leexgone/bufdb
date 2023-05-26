@@ -10,7 +10,6 @@ use leveldb::iterator::Iterator;
 use leveldb::iterator::LevelDBIterator;
 
 use crate::database::DBImpl;
-// use crate::read_options;
 use crate::suffix::append_suffix;
 use crate::suffix::size_of_suffix;
 use crate::suffix::trucate_suffix;

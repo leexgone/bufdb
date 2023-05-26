@@ -16,4 +16,5 @@ categories = []
 [dependencies]
 
 bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
+chrono = "0.4.24"
 db-key = "0.0.5"

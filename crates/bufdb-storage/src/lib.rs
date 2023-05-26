@@ -8,6 +8,8 @@ use entry::Entry;
 
 pub mod entry;
 pub mod io;
+pub mod cache;
+
 pub(crate) mod packed_int;
 
 pub trait PrimaryCursor<'a> {
