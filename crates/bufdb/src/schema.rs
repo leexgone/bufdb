@@ -32,6 +32,9 @@ pub(crate) struct SchemaImpl<'a, T: StorageEngine<'a>> {
     _marker: PhantomData<&'a T>
 }
 
+unsafe impl <'a, T: StorageEngine<'a>> Send for SchemaImpl<'a, T> {}
+unsafe impl <'a, T: StorageEngine<'a>> Sync for SchemaImpl<'a, T> {}
+
 impl <'a, T: StorageEngine<'a>> Maintainable for SchemaImpl<'a, T> {
     fn maintain(&self) {
         self.tables.cleanup(&self.config);

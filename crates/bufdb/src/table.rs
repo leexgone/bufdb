@@ -13,6 +13,9 @@ pub(crate) struct TableImpl<'a, F: StorageEngine<'a>> {
     _db: F::DATABASE,
 }
 
+unsafe impl <'a, T: StorageEngine<'a>> Send for TableImpl<'a, T> {}
+unsafe impl <'a, T: StorageEngine<'a>> Sync for TableImpl<'a, T> {}
+
 impl <'a, T: StorageEngine<'a>> Maintainable for TableImpl<'a, T> {
     fn maintain(&self) {
         todo!()

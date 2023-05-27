@@ -35,6 +35,9 @@ pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
     _marker: PhantomData<&'a T>
 }
 
+unsafe impl <'a, T: StorageEngine<'a>> Send for InstImpl<'a, T> {}
+unsafe impl <'a, T: StorageEngine<'a>> Sync for InstImpl<'a, T> {}
+
 impl <'a, T: StorageEngine<'a>> Maintainable for InstImpl<'a, T> {
     fn maintain(&self) {
         self.schemas.cleanup(&self.config);

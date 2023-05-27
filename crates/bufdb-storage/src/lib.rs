@@ -80,7 +80,7 @@ pub struct EnvironmentConfig {
     pub temporary: bool,
 }
 
-pub trait StorageEngine<'a> : Copy + Clone {
+pub trait StorageEngine<'a> : Copy + Clone + Send {
     type CURSOR: PrimaryCursor<'a>;
     type SCUROSR: SecondaryCursor<'a>;
     type DATABASE: Database<'a, Self::CURSOR>;
