@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 
 use bufdb_api::config::InstanceConfig;
 use bufdb_level::LevelDBEngine as DBEngine;
@@ -48,3 +49,20 @@ impl <'a, T: StorageEngine<'a>> Maintainable for InstImpl<'a, T> {
         }
     }
 }
+
+// struct DaemonData<'a> {
+//     insts: Vec<Arc<InstImpl<'a, DBEngine>>>,
+//     thead: Option<JoinHandle<()>>,
+//     terminated: bool,
+// }
+
+// lazy_static::lazy_static! {
+//     static ref DAEMON: std::sync::RwLock<DaemonData> = std::sync::RwLock::new(DaemonData {
+//         insts: Vec::new(),
+//         thread: None,
+//         terminated: false,
+//     });
+// }
+// lazy_static::lazy_static! {
+//     static ref DEAMON: crate::daemon::Daemon<'a, InstImpl<DBEngine>> = crate::daemon::Daemon::new();
+// }
