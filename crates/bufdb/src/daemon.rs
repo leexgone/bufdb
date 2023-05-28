@@ -48,15 +48,19 @@ impl <T: Maintainable> Daemon<T> {
         data.items.push(item);
 
         if data.thread.is_none() {
-            let data = self.data.clone();
+            data.terminated = false;
+
+            let local_data = self.data.clone();
             let thread = spawn(move || {
                 // let data = data.read().unwrap();
-                let data = data.write().unwrap();
+                let data = local_data.write().unwrap();
+                for item in data.items.iter() {
+                    item.maintain();
+                }
             });
+
+            data.thread = Some(thread);
         }
     }
 
-    pub fn do_it(&self) {
-        
-    }
 }

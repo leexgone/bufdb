@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::thread::JoinHandle;
 
 use bufdb_api::config::InstanceConfig;
 use bufdb_level::LevelDBEngine as DBEngine;
