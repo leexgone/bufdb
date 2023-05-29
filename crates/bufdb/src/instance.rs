@@ -2,30 +2,43 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use bufdb_api::config::InstanceConfig;
+use bufdb_api::error::Result;
 use bufdb_level::LevelDBEngine as DBEngine;
 use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::CachePool;
 
+use crate::daemon::Daemon;
 use crate::daemon::Maintainable;
 use crate::schema::SchemaImpl;
 
 // type DBEngine = LevelDBEngine;
 
-pub struct Instance<'a> {
-    inst: Arc<InstImpl<'a, DBEngine>>
+pub struct Instance {
+    daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>,
+    inst: Arc<InstImpl<'static, DBEngine>>,
 }
 
-impl <'a> Instance<'a> {
+impl Instance {
+    pub(crate) fn new(daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>, config: InstanceConfig) -> Result<Self> {
+        let inst = InstImpl::new(config)?;
+        let inst = Arc::new(inst);
+
+        daemon.add(inst.clone());
+
+        Ok(Self { 
+            daemon, 
+            inst
+        })
+    }
+
     pub fn config(&self) -> &InstanceConfig {
         &self.inst.config
     }
 }
 
-impl <'a> From<Arc<InstImpl<'a, DBEngine>>> for Instance<'a> {
-    fn from(inst: Arc<InstImpl<'a, DBEngine>>) -> Self {
-        Self { 
-            inst 
-        }
+impl Drop for Instance {
+    fn drop(&mut self) {
+        self.daemon.remove(&self.inst);
     }
 }
 
@@ -33,6 +46,16 @@ pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
     config: InstanceConfig,
     schemas: CachePool<SchemaImpl<'a, T>>,
     _marker: PhantomData<&'a T>
+}
+
+impl <'a, T: StorageEngine<'a>> InstImpl<'a, T> {
+    pub fn new(config: InstanceConfig) -> Result<Self> {
+        Ok(Self { 
+            config: config, 
+            schemas: CachePool::new(), 
+            _marker: PhantomData 
+        })
+    }
 }
 
 unsafe impl <'a, T: StorageEngine<'a>> Send for InstImpl<'a, T> {}
@@ -54,20 +77,3 @@ impl <'a, T: StorageEngine<'a>> PartialEq for InstImpl<'a, T> {
         self.config.dir() == other.config.dir()
     }
 }
-
-// struct DaemonData<'a> {
-//     insts: Vec<Arc<InstImpl<'a, DBEngine>>>,
-//     thead: Option<JoinHandle<()>>,
-//     terminated: bool,
-// }
-
-// lazy_static::lazy_static! {
-//     static ref DAEMON: std::sync::RwLock<DaemonData> = std::sync::RwLock::new(DaemonData {
-//         insts: Vec::new(),
-//         thread: None,
-//         terminated: false,
-//     });
-// }
-// lazy_static::lazy_static! {
-//     static ref DEAMON: crate::daemon::Daemon<'a, InstImpl<DBEngine>> = crate::daemon::Daemon::new();
-// }

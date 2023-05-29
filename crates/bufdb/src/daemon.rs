@@ -89,8 +89,8 @@ impl <T: Maintainable + PartialEq> Daemon<T> {
         }
     }
 
-    pub fn remove(&self, item: Arc<T>) {
+    pub fn remove(&self, item: &Arc<T>) {
         let mut data = self.data.write().unwrap();
-        data.items.retain(|x| x != &item);
+        data.items.retain(|x| x != item);
     }
 }
