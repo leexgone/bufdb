@@ -49,6 +49,12 @@ impl <'a, T: StorageEngine<'a>> Maintainable for InstImpl<'a, T> {
     }
 }
 
+impl <'a, T: StorageEngine<'a>> PartialEq for InstImpl<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.config.dir() == other.config.dir()
+    }
+}
+
 // struct DaemonData<'a> {
 //     insts: Vec<Arc<InstImpl<'a, DBEngine>>>,
 //     thead: Option<JoinHandle<()>>,

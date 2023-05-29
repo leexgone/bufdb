@@ -6,7 +6,8 @@ pub mod instance;
 pub mod schema;
 pub mod table;
 pub mod cursor;
-pub mod daemon;
+
+pub(crate) mod daemon;
 
 pub struct DBFactory {
     daemon: Daemon<InstImpl<'static, DBEngine>>
