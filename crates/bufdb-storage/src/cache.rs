@@ -19,7 +19,7 @@ macro_rules! get_timestamp {
 #[macro_export]
 macro_rules! set_timestamp {
     ($atomic: expr) => {
-        $atomic.store(bufdb_storage::cache::now(), std::sync::atomic::Ordering::Relaxed)
+        $atomic.store(chrono::Local::now().timestamp_millis(), std::sync::atomic::Ordering::Relaxed)
     };
     ($atomic: expr, $value: expr) => {
         $atomic.store($atomic, std::sync::atomic::Ordering::Relaxed)
@@ -168,7 +168,8 @@ mod tests {
         }
 
         fn touch(&self) {
-            self.last_access.store(now(), std::sync::atomic::Ordering::Relaxed);
+            // self.last_access.store(now(), std::sync::atomic::Ordering::Relaxed);
+            set_timestamp!(self.last_access);
         }
     }
 
