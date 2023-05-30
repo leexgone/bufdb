@@ -14,7 +14,7 @@ pub mod cursor;
 
 pub(crate) mod daemon;
 
-pub struct DBFactory {
+struct DBFactory {
     daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>
 }
 
@@ -28,4 +28,12 @@ impl DBFactory {
     pub fn create_instance(&self, config: InstanceConfig) -> Result<Instance> {
         Instance::new(self.daemon.clone(), config)
     }
+}
+
+lazy_static::lazy_static! {
+    static ref FACTORY: DBFactory = DBFactory::new();
+}
+
+pub fn new_instance(config: InstanceConfig) -> Result<Instance> {
+    FACTORY.create_instance(config)
 }
