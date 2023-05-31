@@ -11,8 +11,6 @@ use crate::daemon::Daemon;
 use crate::daemon::Maintainable;
 use crate::schema::SchemaImpl;
 
-// type DBEngine = LevelDBEngine;
-
 pub struct Instance {
     daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>,
     inst: Arc<InstImpl<'static, DBEngine>>,
