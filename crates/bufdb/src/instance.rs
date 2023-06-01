@@ -11,10 +11,14 @@ use crate::daemon::Daemon;
 use crate::daemon::Maintainable;
 use crate::schema::SchemaImpl;
 
+#[derive(Clone)]
 pub struct Instance {
     daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>,
     inst: Arc<InstImpl<'static, DBEngine>>,
 }
+
+unsafe impl Send for Instance {}
+unsafe impl Sync for Instance {}
 
 impl Instance {
     pub(crate) fn new(daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>, config: InstanceConfig) -> Result<Self> {
@@ -23,7 +27,7 @@ impl Instance {
 
         daemon.add(inst.clone());
 
-        Ok(Self { 
+        Ok(Self {
             daemon, 
             inst
         })
