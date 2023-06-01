@@ -15,7 +15,6 @@ categories = []
 
 [dependencies]
 
-# lru = "0.10.0"
 chrono = "0.4.26"
 lazy_static = "1.4.0"
 bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
