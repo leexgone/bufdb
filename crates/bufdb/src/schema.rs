@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
 use bufdb_api::config::SchemaConfig;
-use bufdb_level::LevelDBEngine as DBEngine;
 use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::CachePool;
 use bufdb_storage::cache::Poolable;
@@ -11,6 +10,7 @@ use bufdb_storage::get_timestamp;
 use bufdb_storage::set_timestamp;
 
 use crate::daemon::Maintainable;
+use crate::engine::DBEngine;
 use crate::table::TableImpl;
 
 pub struct Schema<'a> {

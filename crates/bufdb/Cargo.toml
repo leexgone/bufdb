@@ -11,12 +11,14 @@ readme = "../../README.md"
 keywords = []
 categories = []
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["leveldb"]
+leveldb = ["bufdb-level"]
 
 [dependencies]
 
-chrono = "0.4.26"
+chrono = "0.4.24"
 lazy_static = "1.4.0"
 bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
 bufdb-storage = { version = "0.0.1", path = "../bufdb-storage" }
-bufdb-level = { version = "0.0.1", path = "../bufdb-level" }
+bufdb-level = { version = "0.0.1", optional = true, path = "../bufdb-level" }

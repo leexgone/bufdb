@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use bufdb_api::config::InstanceConfig;
 use bufdb_api::error::Result;
-use bufdb_level::LevelDBEngine as DBEngine;
 use daemon::Daemon;
+use engine::DBEngine;
 use instance::InstImpl;
 use instance::Instance;
 
@@ -13,6 +13,7 @@ pub mod table;
 pub mod cursor;
 
 pub(crate) mod daemon;
+pub(crate) mod engine;
 
 struct DBFactory {
     daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>

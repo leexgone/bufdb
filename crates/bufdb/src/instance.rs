@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use bufdb_api::config::InstanceConfig;
 use bufdb_api::error::Result;
-use bufdb_level::LevelDBEngine as DBEngine;
 use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::CachePool;
 
 use crate::daemon::Daemon;
 use crate::daemon::Maintainable;
+use crate::engine::DBEngine;
 use crate::schema::SchemaImpl;
 
 #[derive(Clone)]
