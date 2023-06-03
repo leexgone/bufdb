@@ -25,6 +25,6 @@ impl <'a> StorageEngine<'a> for DBEngine {
     type ENVIRONMENT = bufdb_level::env::LevelDBEnv;
 
     fn name(&self) -> &str {
-        "Level DB Engine"
+        "LevelDB"
     }
 }
