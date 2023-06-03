@@ -18,7 +18,7 @@ leveldb = ["bufdb-level"]
 [dependencies]
 
 chrono = "0.4.24"
-lazy_static = "1.4.0"
+# lazy_static = "1.4.0"
 bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
 bufdb-storage = { version = "0.0.1", path = "../bufdb-storage" }
 bufdb-level = { version = "0.0.1", optional = true, path = "../bufdb-level" }

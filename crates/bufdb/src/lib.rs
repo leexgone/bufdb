@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use bufdb_api::config::InstanceConfig;
 use bufdb_api::error::Result;
@@ -31,10 +32,10 @@ impl DBFactory {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref FACTORY: DBFactory = DBFactory::new();
-}
+static FACTORY: OnceLock<DBFactory> = OnceLock::new();
 
 pub fn new_instance(config: InstanceConfig) -> Result<Instance> {
-    FACTORY.create_instance(config)
+    let factory = FACTORY.get_or_init(|| DBFactory::new());
+
+    factory.create_instance(config)
 }
