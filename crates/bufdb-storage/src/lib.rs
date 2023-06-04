@@ -44,6 +44,7 @@ pub trait Environment<'a> : Sized {
     type SDATABASE: Database<'a, Self::SCUROSR>;
 
     fn new(config: EnvironmentConfig) -> Result<Self>;
+    
     fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
     fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
     fn drop_database(&mut self, name: &str) -> Result<()>;

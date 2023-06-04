@@ -17,6 +17,10 @@ pub enum ErrorKind {
     NullValue,
     #[fail(display = "Undefined expression")]
     UndefinedExpr,
+    #[fail(display = "Invalidate configuration")]
+    Configuration,
+    #[fail(display = "Close using object")]
+    CloseUsing,
     #[fail(display = "Format error")]
     Format(#[cause] std::fmt::Error),
     #[fail(display = "Parse float error")]

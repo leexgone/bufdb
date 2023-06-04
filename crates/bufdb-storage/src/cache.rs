@@ -74,9 +74,9 @@ impl <T: Poolable> CachePool<T> {
         items.insert(item.name().into(), item);
     }
 
-    pub fn remove(&self, name: &str) {
+    pub fn remove(&self, name: &str) -> Option<Arc<T>> {
         let mut items = self.items.write().unwrap();
-        items.remove(name);
+        items.remove(name)
     }
 
     pub fn collect(&self) -> Vec<Arc<T>> {
