@@ -18,36 +18,6 @@ use crate::engine::DBEngine;
 use crate::instance::InstImpl;
 use crate::table::TableImpl;
 
-pub struct Schema {
-    instance: Arc<InstImpl<'static, DBEngine>>,
-    schema: Arc<SchemaImpl<'static, DBEngine>>,
-}
-
-impl Schema {
-    pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Self {
-        Self { 
-            instance, 
-            schema 
-        }
-    }
-    pub fn name(&self) -> &str {
-        &self.schema.name
-    }
-
-    pub fn config(&self) -> &SchemaConfig {
-        self.schema.config()
-    }
-}
-
-unsafe impl Send for Schema {}
-unsafe impl Sync for Schema {}
-
-impl Drop for Schema {
-    fn drop(&mut self) {
-        self.instance.close(self.schema.name());
-    }
-}
-
 pub(crate) struct SchemaImpl<'a, T: StorageEngine<'a>> {
     name: String,
     config: SchemaConfig,
@@ -109,5 +79,35 @@ impl <'a, T: StorageEngine<'a>> Poolable for SchemaImpl<'a, T> {
 
     fn touch(&self) {
         set_timestamp!(self.last_access)
+    }
+}
+
+pub struct Schema {
+    instance: Arc<InstImpl<'static, DBEngine>>,
+    schema: Arc<SchemaImpl<'static, DBEngine>>,
+}
+
+impl Schema {
+    pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Self {
+        Self { 
+            instance, 
+            schema 
+        }
+    }
+    pub fn name(&self) -> &str {
+        &self.schema.name
+    }
+
+    pub fn config(&self) -> &SchemaConfig {
+        self.schema.config()
+    }
+}
+
+unsafe impl Send for Schema {}
+unsafe impl Sync for Schema {}
+
+impl Drop for Schema {
+    fn drop(&mut self) {
+        self.instance.close(self.schema.name());
     }
 }

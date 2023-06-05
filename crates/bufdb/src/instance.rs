@@ -15,6 +15,67 @@ use crate::engine::DBEngine;
 use crate::schema::Schema;
 use crate::schema::SchemaImpl;
 
+pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
+    config: InstanceConfig,
+    schemas: CachePool<SchemaImpl<'a, T>>,
+}
+
+impl <'a, T: StorageEngine<'a>> InstImpl<'a, T> {
+    pub fn new(config: InstanceConfig) -> Result<Self> {
+        if !config.dir().is_dir() {
+            create_dir_all(config.dir())?;
+        }
+
+        Ok(Self { 
+            config: config, 
+            schemas: CachePool::new(), 
+        })
+    }
+
+    pub fn open(&self, name: &str, config: SchemaConfig) -> Result<Arc<SchemaImpl<'a, T>>> {
+        if let Some(schema) = self.schemas.get(name) {
+            if config.readonly() != schema.config().readonly() || config.temporary() != schema.config().temporary() {
+                Err(ErrorKind::Configuration.into())
+            } else {
+                Ok(schema)
+            }
+        } else {
+            let schema = SchemaImpl::new(self.config.dir(), name, config)?;
+            let schema = Arc::new(schema);
+            self.schemas.put(schema.clone());
+            Ok(schema)
+        }
+    }
+
+    pub fn get(&self, name: &str) -> Option<Arc<SchemaImpl<'a, T>>> {
+        self.schemas.get(name)
+    }
+
+    pub fn close(&self, name: &str) -> Option<Arc<SchemaImpl<'a, T>>> {
+        self.schemas.remove(name)
+    }
+}
+
+unsafe impl <'a, T: StorageEngine<'a>> Send for InstImpl<'a, T> {}
+unsafe impl <'a, T: StorageEngine<'a>> Sync for InstImpl<'a, T> {}
+
+impl <'a, T: StorageEngine<'a>> Maintainable for InstImpl<'a, T> {
+    fn maintain(&self) {
+        self.schemas.cleanup(&self.config);
+
+        let schemas = self.schemas.collect();
+        for schema in schemas {
+            schema.maintain();
+        }
+    }
+}
+
+impl <'a, T: StorageEngine<'a>> PartialEq for InstImpl<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.config.dir() == other.config.dir()
+    }
+}
+
 #[derive(Clone)]
 pub struct Instance {
     daemon: Arc<Daemon<InstImpl<'static, DBEngine>>>,
@@ -75,66 +136,5 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         self.daemon.remove(&self.inst);
-    }
-}
-
-pub(crate) struct InstImpl<'a, T: StorageEngine<'a>> {
-    config: InstanceConfig,
-    schemas: CachePool<SchemaImpl<'a, T>>,
-}
-
-impl <'a, T: StorageEngine<'a>> InstImpl<'a, T> {
-    pub fn new(config: InstanceConfig) -> Result<Self> {
-        if !config.dir().is_dir() {
-            create_dir_all(config.dir())?;
-        }
-
-        Ok(Self { 
-            config: config, 
-            schemas: CachePool::new(), 
-        })
-    }
-
-    pub fn open(&self, name: &str, config: SchemaConfig) -> Result<Arc<SchemaImpl<'a, T>>> {
-        if let Some(schema) = self.schemas.get(name) {
-            if config.readonly() != schema.config().readonly() || config.temporary() != schema.config().temporary() {
-                Err(ErrorKind::Configuration.into())
-            } else {
-                Ok(schema)
-            }
-        } else {
-            let schema = SchemaImpl::new(self.config.dir(), name, config)?;
-            let schema = Arc::new(schema);
-            self.schemas.put(schema.clone());
-            Ok(schema)
-        }
-    }
-
-    pub fn get(&self, name: &str) -> Option<Arc<SchemaImpl<'a, T>>> {
-        self.schemas.get(name)
-    }
-
-    pub fn close(&self, name: &str) -> Option<Arc<SchemaImpl<'a, T>>> {
-        self.schemas.remove(name)
-    }
-}
-
-unsafe impl <'a, T: StorageEngine<'a>> Send for InstImpl<'a, T> {}
-unsafe impl <'a, T: StorageEngine<'a>> Sync for InstImpl<'a, T> {}
-
-impl <'a, T: StorageEngine<'a>> Maintainable for InstImpl<'a, T> {
-    fn maintain(&self) {
-        self.schemas.cleanup(&self.config);
-
-        let schemas = self.schemas.collect();
-        for schema in schemas {
-            schema.maintain();
-        }
-    }
-}
-
-impl <'a, T: StorageEngine<'a>> PartialEq for InstImpl<'a, T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.config.dir() == other.config.dir()
     }
 }

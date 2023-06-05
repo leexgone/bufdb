@@ -43,6 +43,10 @@ pub trait Input {
     fn read_packed_i64(&mut self) -> Result<i64>;
 }
 
+pub trait Inputable : Sized {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self>;
+}
+
 pub trait Output : Sized {
     fn write_string(&mut self, s: Option<&String>) -> Result<()> {
         self.write_str(s.map(|s| s.as_ref()))
@@ -60,6 +64,10 @@ pub trait Output : Sized {
     fn write_f64(&mut self, v: f64) -> Result<()>;
     fn write_packed_i32(&mut self, v: i32) -> Result<()>;
     fn write_packed_i64(&mut self, v: i64) -> Result<()>;
+}
+
+pub trait Outputable {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()>;
 }
 
 /// `BufferInput` is a reader for buffer entry.
@@ -265,6 +273,67 @@ impl <'a> Input for BufferInput<'a> {
 
 }
 
+impl Inputable for String {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        let s = reader.read_string()?;
+        Ok(s.unwrap_or_default())
+    }
+}
+
+impl Inputable for u8 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_u8()
+    }
+}
+
+impl Inputable for u16 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_u16()
+    }
+}
+
+impl Inputable for u32 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_u32()
+    }
+}
+
+impl Inputable for u64 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_u64()
+    }
+}
+
+impl Inputable for i8 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_i8()
+    }
+}
+
+impl Inputable for i16 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_i16()
+    }
+}
+
+impl Inputable for i32 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_i32()
+    }
+}
+
+impl Inputable for i64 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_i64()
+    }
+}
+
+impl Inputable for f64 {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_f64()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BufferOutput {
     data: Vec<u8>,
@@ -457,6 +526,72 @@ impl Output for BufferOutput {
         let len = val.write(&mut self.data[self.pos..])?;
         self.pos = self.pos + len;
         Ok(())
+    }
+}
+
+impl Outputable for String {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_str(Some(self.as_str()))
+    }
+}
+
+impl Outputable for str {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_str(Some(self))
+    }
+}
+
+impl Outputable for u8 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u8(*self)
+    }
+}
+
+impl Outputable for u16 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u16(*self)
+    }
+}
+
+impl Outputable for u32 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u32(*self)
+    }
+}
+
+impl Outputable for u64 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u64(*self)
+    }
+}
+
+impl Outputable for i8 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_i8(*self)
+    }
+}
+
+impl Outputable for i16 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_i16(*self)
+    }
+}
+
+impl Outputable for i32 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_i32(*self)
+    }
+}
+
+impl Outputable for i64 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_i64(*self)
+    }
+}
+
+impl Outputable for f64 {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_f64(*self)
     }
 }
 
