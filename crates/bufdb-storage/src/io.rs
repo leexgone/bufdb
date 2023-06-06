@@ -273,6 +273,12 @@ impl <'a> Input for BufferInput<'a> {
 
 }
 
+impl Inputable for Option<String> {
+    fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
+        reader.read_string()
+    }
+}
+
 impl Inputable for String {
     fn read_from<R: Input>(reader: &mut R) -> Result<Self> {
         let s = reader.read_string()?;
