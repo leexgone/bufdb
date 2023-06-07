@@ -16,11 +16,11 @@ impl Debug for DBEngine {
 
 #[cfg(feature = "leveldb")]
 impl <'a> StorageEngine<'a> for DBEngine {
-    type CURSOR = bufdb_level::cursor::PKCursor<'a>;
-    type SCUROSR = bufdb_level::cursor::IDXCursor<'a>;
+    // type CURSOR = bufdb_level::cursor::PKCursor<'a>;
+    // type SCUROSR = bufdb_level::cursor::IDXCursor<'a>;
 
-    type DATABASE = bufdb_level::database::PrimaryDatabase<'a>;
-    type SDATABASE = bufdb_level::database::SecondaryDatabase<'a>;
+    // type DATABASE = bufdb_level::database::PrimaryDatabase<'a>;
+    // type SDATABASE = bufdb_level::database::SecondaryDatabase<'a>;
 
     type ENVIRONMENT = bufdb_level::env::LevelDBEnv;
 

@@ -535,6 +535,12 @@ impl Output for BufferOutput {
     }
 }
 
+impl Outputable for Option<&str> {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_str(*self)
+    }
+}
+
 impl Outputable for String {
     fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
         writer.write_str(Some(self.as_str()))

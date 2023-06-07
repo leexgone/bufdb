@@ -45,12 +45,12 @@ pub trait Environment<'a> : Sized {
 
     fn new(config: EnvironmentConfig) -> Result<Self>;
     
-    fn create_database<C: KeyComparator>(&mut self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
-    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&mut self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
-    fn drop_database(&mut self, name: &str) -> Result<()>;
-    fn drop_secondary_database(&mut self, name: &str) -> Result<()>;
-    fn truncate_database(&mut self, name: &str) -> Result<()>;
-    fn rename_database(&mut self, raw_name: &str, new_name: &str) -> Result<()>;
+    fn create_database<C: KeyComparator>(&self, name: &str, config: DatabaseConfig<C>) -> Result<Self::DATABASE>;
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> Result<Self::SDATABASE>;
+    fn drop_database(&self, name: &str) -> Result<()>;
+    fn drop_secondary_database(&self, name: &str) -> Result<()>;
+    fn truncate_database(&self, name: &str) -> Result<()>;
+    fn rename_database(&self, raw_name: &str, new_name: &str) -> Result<()>;
 }
 
 pub trait KeyComparator : Debug {
@@ -82,10 +82,10 @@ pub struct EnvironmentConfig {
 }
 
 pub trait StorageEngine<'a> : Copy + Clone + Send {
-    type CURSOR: PrimaryCursor<'a>;
-    type SCUROSR: SecondaryCursor<'a>;
-    type DATABASE: Database<'a, Self::CURSOR>;
-    type SDATABASE: Database<'a, Self::SCUROSR>;
+    // type CURSOR: PrimaryCursor<'a>;
+    // type SCUROSR: SecondaryCursor<'a>;
+    // type DATABASE: Database<'a, Self::CURSOR>;
+    // type SDATABASE: Database<'a, Self::SCUROSR>;
     type ENVIRONMENT: Environment<'a>;
 
     fn name(&self) -> &str;

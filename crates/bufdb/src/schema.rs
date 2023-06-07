@@ -3,9 +3,12 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
 use bufdb_api::config::SchemaConfig;
+use bufdb_api::config::TableConfig;
+use bufdb_api::error::ErrorKind;
 use bufdb_api::error::Result;
 use bufdb_storage::Environment;
 use bufdb_storage::EnvironmentConfig;
+use bufdb_storage::KeyComparator;
 use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::CachePool;
 use bufdb_storage::cache::Poolable;
@@ -52,6 +55,23 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
 
     pub fn config(&self) -> &SchemaConfig {
         &self.config
+    }
+
+    pub fn open<C: KeyComparator>(&self, name: &str, config: TableConfig, comparator: C) -> Result<Arc<TableImpl<'a, T>>> {
+        self.touch();
+        
+        if let Some(table) = self.tables.get(name) {
+            if table.config().readonly != config.readonly || table.config().temporary != config.temporary {
+                Err(ErrorKind::Configuration.into())
+            } else {
+                Ok(table)
+            }
+        } else {
+            let table = TableImpl::new(&self.env, name, config, comparator)?;
+            let table = Arc::new(table);
+            self.tables.put(table.clone());
+            Ok(table)
+        }
     }
 }
 
