@@ -82,11 +82,8 @@ pub struct EnvironmentConfig {
 }
 
 pub trait StorageEngine<'a> : Copy + Clone + Send {
-    // type CURSOR: PrimaryCursor<'a>;
-    // type SCUROSR: SecondaryCursor<'a>;
-    // type DATABASE: Database<'a, Self::CURSOR>;
-    // type SDATABASE: Database<'a, Self::SCUROSR>;
     type ENVIRONMENT: Environment<'a>;
 
     fn name(&self) -> &str;
+    // fn new_env(config: EnvironmentConfig) -> Result<Self::ENVIRONMENT>;
 }

@@ -19,6 +19,8 @@ use bufdb_storage::set_timestamp;
 use crate::daemon::Maintainable;
 use crate::engine::DBEngine;
 use crate::instance::InstImpl;
+use crate::table::KVTable;
+use crate::table::StringKeyComparator;
 use crate::table::TableImpl;
 
 pub(crate) struct SchemaImpl<'a, T: StorageEngine<'a>> {
@@ -39,7 +41,7 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
             temporary: config.temporary(),
         };
         let env = T::ENVIRONMENT::new(env_config)?;
-        
+
         Ok(Self { 
             name, 
             config, 
@@ -72,6 +74,18 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
             self.tables.put(table.clone());
             Ok(table)
         }
+    }
+
+    pub fn get(&self, name: &str) -> Option<Arc<TableImpl<'a, T>>> {
+        self.touch();
+
+        self.tables.get(name)
+    }
+
+    pub fn close(&self, name: &str) -> Option<Arc<TableImpl<'a, T>>> {
+        self.touch();
+
+        self.tables.remove(name)
     }
 }
 

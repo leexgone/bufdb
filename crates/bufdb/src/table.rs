@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
 use bufdb_api::config::TableConfig;
@@ -9,9 +10,12 @@ use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::Poolable;
 use bufdb_storage::cache::now;
 use bufdb_storage::get_timestamp;
+use bufdb_storage::io::Input;
 use bufdb_storage::set_timestamp;
 
 use crate::daemon::Maintainable;
+use crate::engine::DBEngine;
+use crate::schema::SchemaImpl;
 
 pub(crate) struct TableImpl<'a, T: StorageEngine<'a>> {
     name: String,
@@ -49,7 +53,6 @@ unsafe impl <'a, T: StorageEngine<'a>> Sync for TableImpl<'a, T> {}
 
 impl <'a, T: StorageEngine<'a>> Maintainable for TableImpl<'a, T> {
     fn maintain(&self) {
-        todo!()
     }
 }
 
@@ -64,5 +67,58 @@ impl <'a, T: StorageEngine<'a>> Poolable for TableImpl<'a, T> {
 
     fn touch(&self) {
         set_timestamp!(self.last_access)
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct StringKeyComparator {
+}
+
+impl KeyComparator for StringKeyComparator {
+    fn compare<T: bufdb_storage::entry::Entry>(&self, key1: &T, key2: &T) -> Result<std::cmp::Ordering> {
+        let v1 = key1.as_input().read_string()?;
+        let v2 = key2.as_input().read_string()?;
+
+        if let Some(s1) = v1 {
+            if let Some(s2) = v2 {
+                Ok(s1.cmp(&s2))
+            } else {
+                Ok(std::cmp::Ordering::Greater)
+            }
+        } else {
+            if v2.is_some() {
+                Ok(std::cmp::Ordering::Less)
+            } else {
+                Ok(std::cmp::Ordering::Equal)
+            }
+        }
+    }
+}
+
+pub struct KVTable {
+    schema: Arc<SchemaImpl<'static, DBEngine>>,
+    table: Arc<TableImpl<'static, DBEngine>>,
+}
+
+impl KVTable {
+    pub(crate) fn new(schema: Arc<SchemaImpl<'static, DBEngine>>, table: Arc<TableImpl<'static, DBEngine>>) -> Self {
+        Self { 
+            schema, 
+            table 
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        self.table.name()
+    }
+
+    pub fn config(&self) -> &TableConfig {
+        self.table.config()
+    }
+}
+
+impl Drop for KVTable {
+    fn drop(&mut self) {
+        self.schema.close(self.table.name());
     }
 }
