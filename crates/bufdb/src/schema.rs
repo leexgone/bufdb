@@ -119,14 +119,18 @@ impl <'a, T: StorageEngine<'a>> Poolable for SchemaImpl<'a, T> {
 pub struct Schema {
     instance: Arc<InstImpl<'static, DBEngine>>,
     schema: Arc<SchemaImpl<'static, DBEngine>>,
+    meta: KVTable,
 }
 
 impl Schema {
-    pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Self {
-        Self { 
+    pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Result<Self> {
+        let meta = schema.open("SYS_META", TableConfig { readonly: schema.config().readonly(), temporary: false }, StringKeyComparator {})?;
+        let meta = KVTable::new(schema.clone(), meta);
+        Ok(Self { 
             instance, 
-            schema 
-        }
+            schema,
+            meta
+        })
     }
     pub fn name(&self) -> &str {
         &self.schema.name

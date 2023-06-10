@@ -3,6 +3,7 @@ use std::sync::atomic::AtomicI64;
 
 use bufdb_api::config::TableConfig;
 use bufdb_api::error::Result;
+use bufdb_storage::Database;
 use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
 use bufdb_storage::KeyComparator;
@@ -11,6 +12,8 @@ use bufdb_storage::cache::Poolable;
 use bufdb_storage::cache::now;
 use bufdb_storage::get_timestamp;
 use bufdb_storage::io::Input;
+use bufdb_storage::io::Inputable;
+use bufdb_storage::io::Outputable;
 use bufdb_storage::set_timestamp;
 
 use crate::daemon::Maintainable;
@@ -114,6 +117,38 @@ impl KVTable {
 
     pub fn config(&self) -> &TableConfig {
         self.table.config()
+    }
+
+    pub fn put<V: Outputable>(&self, key: &str, value: V) -> Result<()> {
+        let k = key.to_entry()?;
+        let v = value.to_entry()?;
+
+        self.table.db.put(&k, &v)
+    }
+
+    pub fn get<V: Inputable>(&self, key: &str) -> Result<Option<V>> {
+        let k = key.to_entry()?;
+        if let Some(data) = self.table.db.get(&k)? {
+            let v = V::from_entry(&data)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_or<V: Inputable>(&self, key: &str, default: V) -> Result<V> {
+        let v = self.get(key)?;
+        Ok(v.unwrap_or(default))
+    }
+
+    pub fn get_or_else<V: Inputable, F: FnOnce() -> V>(&self, key: &str, f: F) -> Result<V> {
+        let v = self.get(key)?;
+        Ok(v.unwrap_or_else(f))
+    }
+
+    pub fn get_or_default<V: Inputable + Default>(&self, key: &str) -> Result<V> {
+        let v = self.get(key)?;
+        Ok(v.unwrap_or_default())
     }
 }
 

@@ -107,12 +107,17 @@ impl Instance {
             Err(ErrorKind::Configuration.into())
         } else {
             let schema = self.inst.open(name, config)?;
-            Ok(Schema::new(self.inst.clone(), schema))
+            Schema::new(self.inst.clone(), schema)
         }
     }
 
-    pub fn open_exist_schema(&self, name: &str) -> Option<Schema> {
-        self.inst.get(name).map(|s| Schema::new(self.inst.clone(), s))
+    pub fn open_exist_schema(&self, name: &str) -> Result<Option<Schema>> {
+        if let Some(schema) = self.inst.get(name) {
+            let schema = Schema::new(self.inst.clone(), schema)?;
+            Ok(Some(schema))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn drop_schema(&self, name: &str) -> Result<bool> {

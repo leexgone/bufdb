@@ -21,6 +21,7 @@ use std::io::Seek;
 use std::io::Write;
 
 use crate::entry::BufferEntry;
+use crate::entry::Entry;
 use crate::packed_int::PackedI32;
 use crate::packed_int::PackedI64;
 
@@ -45,6 +46,11 @@ pub trait Input {
 
 pub trait Inputable : Sized {
     fn read_from<R: Input>(reader: &mut R) -> Result<Self>;
+
+    fn from_entry<T: Entry>(entry: &T) -> Result<Self> {
+        let mut input = entry.as_input();
+        Self::read_from(&mut input)
+    }
 }
 
 pub trait Output : Sized {
@@ -68,6 +74,12 @@ pub trait Output : Sized {
 
 pub trait Outputable {
     fn write_to<W: Output>(&self, writer: &mut W) -> Result<()>;
+
+    fn to_entry(&self) -> Result<BufferEntry> {
+        let mut output = BufferOutput::new();
+        self.write_to(&mut output)?;
+        Ok(output.into())
+    }
 }
 
 /// `BufferInput` is a reader for buffer entry.
