@@ -82,19 +82,20 @@ impl KeyComparator for StringKeyComparator {
         let v1 = key1.as_input().read_string()?;
         let v2 = key2.as_input().read_string()?;
 
-        if let Some(s1) = v1 {
-            if let Some(s2) = v2 {
-                Ok(s1.cmp(&s2))
-            } else {
-                Ok(std::cmp::Ordering::Greater)
-            }
-        } else {
-            if v2.is_some() {
-                Ok(std::cmp::Ordering::Less)
-            } else {
-                Ok(std::cmp::Ordering::Equal)
-            }
-        }
+        Ok(v1.cmp(&v2))
+        // if let Some(s1) = v1 {
+        //     if let Some(s2) = v2 {
+        //         Ok(s1.cmp(&s2))
+        //     } else {
+        //         Ok(std::cmp::Ordering::Greater)
+        //     }
+        // } else {
+        //     if v2.is_some() {
+        //         Ok(std::cmp::Ordering::Less)
+        //     } else {
+        //         Ok(std::cmp::Ordering::Equal)
+        //     }
+        // }
     }
 }
 
