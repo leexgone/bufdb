@@ -32,8 +32,8 @@ impl <'a, T: StorageEngine<'a>> TableImpl<'a, T> {
         let name: String = name.into();
 
         let db_config = DatabaseConfig {
-            readonly: config.readonly,
-            temporary: config.temporary,
+            readonly: config.readonly(),
+            temporary: config.temporary(),
             comparator
         };
         let db = env.create_database(&name, db_config)?;
@@ -150,6 +150,12 @@ impl KVTable {
     pub fn get_or_default<V: Inputable + Default>(&self, key: &str) -> Result<V> {
         let v = self.get(key)?;
         Ok(v.unwrap_or_default())
+    }
+
+    pub fn exists(&self, key: &str) -> Result<bool> {
+        let k = key.to_entry()?;
+        let data = self.table.db.get(&k)?;
+        Ok(data.is_some())
     }
 }
 

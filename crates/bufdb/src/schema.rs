@@ -8,6 +8,7 @@ use bufdb_api::config::SchemaConfig;
 use bufdb_api::config::TableConfig;
 use bufdb_api::error::ErrorKind;
 use bufdb_api::error::Result;
+use bufdb_api::model::TableDefine;
 use bufdb_storage::Environment;
 use bufdb_storage::EnvironmentConfig;
 use bufdb_storage::KeyComparator;
@@ -70,7 +71,7 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
         self.touch();
         
         if let Some(table) = self.tables.get(name) {
-            if table.config().readonly != config.readonly || table.config().temporary != config.temporary {
+            if table.config().readonly() != config.readonly() || table.config().temporary() != config.temporary() {
                 Err(ErrorKind::Configuration.into())
             } else {
                 Ok(table)
@@ -131,7 +132,7 @@ pub struct Schema {
 
 impl Schema {
     pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Result<Self> {
-        let meta = schema.open("SYS_META", TableConfig { readonly: schema.config().readonly(), temporary: false }, StringKeyComparator {})?;
+        let meta = schema.open("SYS_META", TableConfig::new(schema.config().readonly(), false), StringKeyComparator {})?;
         let meta = KVTable::new(schema.clone(), meta);
         Ok(Self { 
             instance, 
@@ -145,6 +146,21 @@ impl Schema {
 
     pub fn config(&self) -> &SchemaConfig {
         self.schema.config()
+    }
+
+    pub fn create_kv_table(&self, name: &str, config: TableConfig) -> Result<KVTable> {
+        if config.temporary() && config.readonly() {
+            Err(ErrorKind::Configuration.into())
+        } else if self.meta.exists(name)? {
+            Err(ErrorKind::CreateDuplicate.into())
+        } else {
+            let define = TableDefine::new(name);
+            let json: String = (&define).try_into()?;
+            self.meta.put(name, json)?;
+
+            let table = self.schema.open(name, config, StringKeyComparator {})?;
+            Ok(KVTable::new(self.schema.clone(), table))
+        }
     }
 }
 

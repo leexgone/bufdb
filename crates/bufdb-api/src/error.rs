@@ -21,6 +21,8 @@ pub enum ErrorKind {
     Configuration,
     #[fail(display = "Close using object")]
     CloseUsing,
+    #[fail(display = "Create duplicate object")]
+    CreateDuplicate,
     #[fail(display = "Too many files")]
     TooManyFiles,
     #[fail(display = "Format error")]
@@ -35,6 +37,8 @@ pub enum ErrorKind {
     ParseDateTime(#[cause] chrono::format::ParseError),
     #[fail(display = "IO error")]
     IO(#[cause] std::io::Error),
+    #[fail(display = "JSON error")]
+    JSON(serde_json::Error),
     #[fail(display = "database open error")]
     DBOpen(#[cause] PhantomError),
     #[fail(display = "database read error")]
@@ -132,6 +136,12 @@ impl From<chrono::format::ParseError> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         ErrorKind::IO(err).into()
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        ErrorKind::JSON(err).into()
     }
 }
 

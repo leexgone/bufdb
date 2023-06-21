@@ -112,7 +112,7 @@ impl Instance {
         }
     }
 
-    pub fn open_existing_schema(&self, name: &str) -> Result<Option<Schema>> {
+    pub fn open_buffered_schema(&self, name: &str) -> Result<Option<Schema>> {
         if let Some(schema) = self.inst.get(name) {
             let schema = Schema::new(self.inst.clone(), schema)?;
             Ok(Some(schema))

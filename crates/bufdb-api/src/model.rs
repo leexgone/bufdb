@@ -46,3 +46,33 @@ pub struct TableDefine {
     pub key_fields: Vec<String>,
     pub indexes: Vec<IndexDefine>
 }
+
+impl TableDefine {
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Self { 
+            name: name.into(), 
+            comment: None, 
+            fields: Vec::new(), 
+            key_fields: Vec::new(), 
+            indexes: Vec::new() 
+        }
+    }
+}
+
+impl TryInto<String> for &TableDefine {
+    type Error = crate::error::Error;
+
+    fn try_into(self) -> Result<String, Self::Error> {
+        let json = serde_json::to_string(self)?;
+        Ok(json)
+    }
+}
+
+impl TryFrom<&str> for TableDefine {
+    type Error = crate::error::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let define: Self = serde_json::from_str(value)?;
+        Ok(define)
+    }
+}
