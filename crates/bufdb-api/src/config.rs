@@ -107,13 +107,18 @@ impl InstanceConfig {
 
     pub fn new_temp() -> Result<Self> {
         let temp_dir = env::temp_dir();
-        for id in 1..100000 {
+        let current = chrono::Local::now().timestamp_millis();
+        for i in 0i64..10000i64 {
+            let id = current + i;
             let filename = format!("DB_{}", id);
             let dir = temp_dir.join(filename);
-            if !dir.exists() {
-                create_dir(&dir)?;
-
-                return Ok(Self::new(dir));
+            match create_dir(&dir) {
+                Ok(_) => return Ok(Self::new(dir)),
+                Err(e) => {
+                    if e.kind() != std::io::ErrorKind::AlreadyExists {
+                        return Err(e.into());
+                    }
+                }
             }
         }
 
