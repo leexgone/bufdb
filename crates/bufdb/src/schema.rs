@@ -1,3 +1,5 @@
+use std::fmt::Display;
+use std::fs::create_dir_all;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
@@ -35,8 +37,13 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
     pub fn new<S: Into<String>>(inst_dir: &Path, name: S, config: SchemaConfig) -> Result<Self> {
         let name: String = name.into();
 
+        let dir = inst_dir.join(&name);
+        if !dir.is_dir() {
+            create_dir_all(&dir)?;
+        }
+
         let env_config = EnvironmentConfig {
-            dir: inst_dir.join(&name),
+            dir,
             readonly: config.readonly(),
             temporary: config.temporary(),
         };
@@ -147,5 +154,11 @@ unsafe impl Sync for Schema {}
 impl Drop for Schema {
     fn drop(&mut self) {
         self.instance.close(self.schema.name());
+    }
+}
+
+impl Display for Schema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.schema.name())
     }
 }

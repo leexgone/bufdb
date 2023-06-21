@@ -1,10 +1,11 @@
+use std::env;
 use std::fmt::Display;
+use std::fs::create_dir;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use tempdir::TempDir;
-
+use crate::error::ErrorKind;
 use crate::error::Result;
 
 pub trait CacheConfig {
@@ -105,8 +106,18 @@ impl InstanceConfig {
     }
 
     pub fn new_temp() -> Result<Self> {
-        let dir = TempDir::new("BUF_")?;
-        Ok(Self::new(dir.into_path()))
+        let temp_dir = env::temp_dir();
+        for id in 1..100000 {
+            let filename = format!("DB_{}", id);
+            let dir = temp_dir.join(filename);
+            if !dir.exists() {
+                create_dir(&dir)?;
+
+                return Ok(Self::new(dir));
+            }
+        }
+
+        Err(ErrorKind::TooManyFiles.into())
     }
 
     pub fn dir(&self) -> &Path {

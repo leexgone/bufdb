@@ -84,6 +84,5 @@ pub struct EnvironmentConfig {
 pub trait StorageEngine<'a> : Copy + Clone + Send {
     type ENVIRONMENT: Environment<'a>;
 
-    fn name(&self) -> &str;
-    // fn new_env(config: EnvironmentConfig) -> Result<Self::ENVIRONMENT>;
+    fn name() -> &'a str;
 }

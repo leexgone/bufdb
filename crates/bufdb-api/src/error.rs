@@ -21,6 +21,8 @@ pub enum ErrorKind {
     Configuration,
     #[fail(display = "Close using object")]
     CloseUsing,
+    #[fail(display = "Too many files")]
+    TooManyFiles,
     #[fail(display = "Format error")]
     Format(#[cause] std::fmt::Error),
     #[fail(display = "Parse float error")]

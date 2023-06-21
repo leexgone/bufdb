@@ -39,3 +39,22 @@ pub fn new_instance(config: InstanceConfig) -> Result<Instance> {
 
     factory.create_instance(config)
 }
+
+#[cfg(test)]
+mod tests {
+    use bufdb_api::config::InstanceConfig;
+    use bufdb_api::config::SchemaConfig;
+
+    use crate::new_instance;
+
+    #[test]
+    fn test_init() {
+        let config = InstanceConfig::new_temp().unwrap();
+        let instance = new_instance(config).unwrap();
+        println!("Init instance: {} - {}", instance, instance.config());
+
+        let config = SchemaConfig::new(false, false);
+        let schema = instance.open_schema("S_TEST", config).unwrap();
+        println!("Init schema: {} - {}", schema, schema.config());
+    }
+}

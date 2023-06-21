@@ -9,7 +9,7 @@ pub struct DBEngine {
 impl Debug for DBEngine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DBEngine")
-            .field("name", &self.name())
+            .field("name", &Self::name())
         .finish()
     }
 }
@@ -24,7 +24,7 @@ impl <'a> StorageEngine<'a> for DBEngine {
 
     type ENVIRONMENT = bufdb_level::env::LevelDBEnv;
 
-    fn name(&self) -> &str {
+    fn name() -> &'a str {
         "LevelDB"
     }
 }

@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
 use std::sync::Arc;
@@ -111,7 +112,7 @@ impl Instance {
         }
     }
 
-    pub fn open_exist_schema(&self, name: &str) -> Result<Option<Schema>> {
+    pub fn open_existing_schema(&self, name: &str) -> Result<Option<Schema>> {
         if let Some(schema) = self.inst.get(name) {
             let schema = Schema::new(self.inst.clone(), schema)?;
             Ok(Some(schema))
@@ -141,5 +142,15 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         self.daemon.remove(&self.inst);
+    }
+}
+
+impl Display for Instance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(file_name) = self.inst.config.dir().file_name() {
+            write!(f, "{}({})", file_name.to_string_lossy(), DBEngine::name())
+        } else {
+            write!(f, "{}({})", self.inst.config.dir().to_string_lossy(), DBEngine::name())
+        }
     }
 }
