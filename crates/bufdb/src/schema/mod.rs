@@ -4,11 +4,13 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
+use bufdb_api::config::CacheConfig;
 use bufdb_api::config::SchemaConfig;
 use bufdb_api::config::TableConfig;
 use bufdb_api::error::ErrorKind;
 use bufdb_api::error::Result;
 use bufdb_api::model::TableDefine;
+use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
 use bufdb_storage::EnvironmentConfig;
 use bufdb_storage::KeyComparator;
@@ -26,10 +28,15 @@ use crate::table::KVTable;
 use crate::table::StringKeyComparator;
 use crate::table::TableImpl;
 
+use self::meta::MetaStorage;
+
+mod meta;
+
 pub(crate) struct SchemaImpl<'a, T: StorageEngine<'a>> {
     name: String,
     config: SchemaConfig,
     env: T::ENVIRONMENT,
+    meta: MetaStorage<'a, T>, 
     tables: CachePool<TableImpl<'a, T>>,
     last_access: AtomicI64,
 }
@@ -50,10 +57,18 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
         };
         let env = T::ENVIRONMENT::new(env_config)?;
 
+        let db_config = DatabaseConfig {
+            readonly: config.readonly(),
+            temporary: config.temporary(),
+            comparator: StringKeyComparator {},
+        };
+        let meta = env.create_database("SYS_META", db_config)?;
+
         Ok(Self { 
             name, 
             config, 
             env, 
+            meta: MetaStorage { db: Some(meta) },
             tables: CachePool::new(), 
             last_access: AtomicI64::new(now()),
         })
@@ -67,7 +82,7 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
         &self.config
     }
 
-    pub fn open<C: KeyComparator>(&self, name: &str, config: TableConfig, comparator: C) -> Result<Arc<TableImpl<'a, T>>> {
+    fn open<C: KeyComparator>(&self, name: &str, config: TableConfig, comparator: C) -> Result<Arc<TableImpl<'a, T>>> {
         self.touch();
         
         if let Some(table) = self.tables.get(name) {
@@ -79,22 +94,56 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
         } else {
             let table = TableImpl::new(&self.env, name, config, comparator)?;
             let table = Arc::new(table);
-            self.tables.put(table.clone());
+            if self.config.max_cache().is_some() {
+                self.tables.put(table.clone());
+            }
             Ok(table)
         }
     }
 
-    pub fn get(&self, name: &str) -> Option<Arc<TableImpl<'a, T>>> {
-        self.touch();
-
-        self.tables.get(name)
+    pub fn create_kv_table(&self, name: &str, config: TableConfig) -> Result<Arc<TableImpl<'a, T>>> {
+        if config.temporary() && config.readonly() {
+            Err(ErrorKind::Configuration.into())
+        } else if self.meta.exists(name)? {
+            Err(ErrorKind::CreateDuplicate.into())
+        } else {
+            let table = self.open(name, config, StringKeyComparator {})?;
+            self.meta.put(&TableDefine::new(name))?;
+            Ok(table)
+        }
     }
 
-    pub fn close(&self, name: &str) -> Option<Arc<TableImpl<'a, T>>> {
+    pub fn open_kv_table(&self, name: &str, config: TableConfig) -> Result<Arc<TableImpl<'a, T>>> {
+        if config.temporary() && config.readonly() {
+            Err(ErrorKind::Configuration.into())
+        } else if !self.meta.exists(name)? {
+            Err(ErrorKind::NotFound.into())
+        } else {
+            let table = self.open(name, config, StringKeyComparator {})?;
+            Ok(table)
+        }
+    }
+
+    // pub fn get(&self, name: &str) -> Option<Arc<TableImpl<'a, T>>> {
+    //     self.touch();
+
+    //     self.tables.get(name)
+    // }
+
+    pub fn close(&self, name: &str, config: &TableConfig) -> Option<Arc<TableImpl<'a, T>>> {
         self.touch();
 
+        if config.temporary() {
+            let _ = self.meta.delete(name);            
+        }
         self.tables.remove(name)
     }
+
+    // pub fn exists(&self, name: &str) -> Result<bool> {
+    //     let key = name.to_entry()?;
+    //     let data = self.meta.get(&key)?;
+    //     Ok(data.is_some())
+    // }
 }
 
 unsafe impl <'a, T: StorageEngine<'a>> Send for SchemaImpl<'a, T> {}
@@ -124,20 +173,22 @@ impl <'a, T: StorageEngine<'a>> Poolable for SchemaImpl<'a, T> {
     }
 }
 
+impl <'a, T: StorageEngine<'a>> Drop for SchemaImpl<'a, T> {
+    fn drop(&mut self) {
+        self.meta.close();
+    }
+}
+
 pub struct Schema {
     instance: Arc<InstImpl<'static, DBEngine>>,
     schema: Arc<SchemaImpl<'static, DBEngine>>,
-    meta: KVTable,
 }
 
 impl Schema {
     pub(crate) fn new(instance: Arc<InstImpl<'static, DBEngine>>, schema: Arc<SchemaImpl<'static, DBEngine>>) -> Result<Self> {
-        let meta = schema.open("SYS_META", TableConfig::new(schema.config().readonly(), false), StringKeyComparator {})?;
-        let meta = KVTable::new(schema.clone(), meta);
         Ok(Self { 
             instance, 
             schema,
-            meta
         })
     }
     pub fn name(&self) -> &str {
@@ -149,18 +200,13 @@ impl Schema {
     }
 
     pub fn create_kv_table(&self, name: &str, config: TableConfig) -> Result<KVTable> {
-        if config.temporary() && config.readonly() {
-            Err(ErrorKind::Configuration.into())
-        } else if self.meta.exists(name)? {
-            Err(ErrorKind::CreateDuplicate.into())
-        } else {
-            let define = TableDefine::new(name);
-            let json: String = (&define).try_into()?;
-            self.meta.put(name, json)?;
+        let table = self.schema.create_kv_table(name, config)?;
+        Ok(KVTable::new(self.schema.clone(), table))
+    }
 
-            let table = self.schema.open(name, config, StringKeyComparator {})?;
-            Ok(KVTable::new(self.schema.clone(), table))
-        }
+    pub fn open_kv_table(&self, name: &str, config: TableConfig) -> Result<KVTable> {
+        let table = self.schema.open_kv_table(name, config)?;
+        Ok(KVTable::new(self.schema.clone(), table))
     }
 }
 

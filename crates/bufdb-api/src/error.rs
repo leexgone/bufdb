@@ -9,6 +9,8 @@ pub enum ErrorKind {
     #[default]
     #[fail(display = "Unknown error")]
     Unknown,
+    #[fail(display = "Not found")]
+    NotFound,
     #[fail(display = "Error datatype")]
     DataType,
     #[fail(display = "Index out of bounds")]
@@ -25,6 +27,8 @@ pub enum ErrorKind {
     CreateDuplicate,
     #[fail(display = "Too many files")]
     TooManyFiles,
+    #[fail(display = "Object is already closed")]
+    AlreadyClosed,
     #[fail(display = "Format error")]
     Format(#[cause] std::fmt::Error),
     #[fail(display = "Parse float error")]

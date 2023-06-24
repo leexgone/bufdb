@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
@@ -161,6 +162,12 @@ impl KVTable {
 
 impl Drop for KVTable {
     fn drop(&mut self) {
-        self.schema.close(self.table.name());
+        self.schema.close(self.table.name(), self.config());
+    }
+}
+
+impl Display for KVTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.table.name())
     }
 }

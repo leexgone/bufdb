@@ -44,6 +44,7 @@ pub fn new_instance(config: InstanceConfig) -> Result<Instance> {
 mod tests {
     use bufdb_api::config::InstanceConfig;
     use bufdb_api::config::SchemaConfig;
+    use bufdb_api::config::TableConfig;
 
     use crate::new_instance;
 
@@ -56,5 +57,25 @@ mod tests {
         let config = SchemaConfig::new(false, false);
         let schema = instance.open_schema("S_TEST", config).unwrap();
         println!("Init schema: {} - {}", schema, schema.config());
+
+        {
+            let config = TableConfig::new(false, false);
+            let kv = schema.create_kv_table("T_KV", config).unwrap();
+            println!("Init kv table: {} - {}", kv, kv.config());
+
+            kv.put("K_I32", 1i32).unwrap();
+            kv.put("K_STR", "HELLO").unwrap();
+        }
+
+        {
+            let kv = schema.open_kv_table("T_KV", TableConfig::new(false, false)).unwrap();
+            println!("Open kv table: {} - {}", kv, kv.config());
+
+            let val: i32 = kv.get_or_default("K_I32").unwrap();
+            assert_eq!(val, 1i32);
+
+            let text: String = kv.get_or_default("K_STR").unwrap();
+            assert_eq!(text, "HELLO");
+        }
     }
 }

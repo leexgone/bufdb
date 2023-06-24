@@ -553,6 +553,12 @@ impl Outputable for Option<&str> {
     }
 }
 
+impl Outputable for &str {
+    fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
+        writer.write_str(Some(*self))
+    }
+}
+
 impl Outputable for String {
     fn write_to<W: Output>(&self, writer: &mut W) -> Result<()> {
         writer.write_str(Some(self.as_str()))
