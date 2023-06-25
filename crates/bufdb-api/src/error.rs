@@ -92,8 +92,6 @@ impl Error {
         }
     }
 
-
-
     pub fn kind(&self) -> &ErrorKind {
         self.inner.get_context()
     }
