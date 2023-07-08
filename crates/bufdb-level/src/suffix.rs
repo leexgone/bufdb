@@ -1,5 +1,5 @@
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
+use bufdb_lib::error::ErrorKind;
+use bufdb_lib::error::Result;
 use bufdb_storage::entry::BufferEntry;
 use bufdb_storage::entry::Entry;
 use bufdb_storage::entry::SliceEntry;

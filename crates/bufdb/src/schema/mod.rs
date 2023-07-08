@@ -4,12 +4,12 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
-use bufdb_api::config::CacheConfig;
-use bufdb_api::config::SchemaConfig;
-use bufdb_api::config::TableConfig;
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
-use bufdb_api::model::TableDefine;
+use bufdb_lib::config::CacheConfig;
+use bufdb_lib::config::SchemaConfig;
+use bufdb_lib::config::TableConfig;
+use bufdb_lib::error::ErrorKind;
+use bufdb_lib::error::Result;
+use bufdb_lib::model::TableDefine;
 use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
 use bufdb_storage::EnvironmentConfig;

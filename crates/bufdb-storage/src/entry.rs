@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
+use bufdb_lib::error::ErrorKind;
+use bufdb_lib::error::Result;
 use db_key::Key;
 
 use crate::io::BufferInput;

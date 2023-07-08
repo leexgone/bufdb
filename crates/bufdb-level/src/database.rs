@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use bufdb_api::db_error;
-use bufdb_api::error::Result;
+use bufdb_lib::db_error;
+use bufdb_lib::error::Result;
 use bufdb_storage::KeyComparator;
 use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
@@ -330,11 +330,11 @@ impl <'a> PrimaryDatabase<'a> {
 }
 
 impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase<'a> {
-    fn count(&self) -> bufdb_api::error::Result<usize> {
+    fn count(&self) -> bufdb_lib::error::Result<usize> {
         self.database.count()
     }
 
-    fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<()> {
+    fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<()> {
         let listeners = lock_db!(self);
 
         if !listeners.is_empty() {
@@ -358,7 +358,7 @@ impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase<'a> {
         Ok(())
     }
 
-    fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
+    fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
         self.database.get(key)
     }
 
@@ -378,7 +378,7 @@ impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase<'a> {
         }
     }
 
-    fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
+    fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<bool> {
         if let Some(data) = self.database.get(key)? {
             let listeners = lock_db!(self);
 
@@ -394,7 +394,7 @@ impl <'a> bufdb_storage::Database<'a, PKCursor<'a>> for PrimaryDatabase<'a> {
         }
     }
 
-    fn open_cursor(&'a self) -> bufdb_api::error::Result<PKCursor<'a>> {
+    fn open_cursor(&'a self) -> bufdb_lib::error::Result<PKCursor<'a>> {
         Ok(PKCursor::new(&self.database))
     }
 }
@@ -434,15 +434,15 @@ impl <'a> Drop for SecondaryDatabase<'a> {
 }
 
 impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase<'a> {
-    fn count(&self) -> bufdb_api::error::Result<usize> {
+    fn count(&self) -> bufdb_lib::error::Result<usize> {
         self.database.count()
     }
 
-    fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<()> {
+    fn put(&self, key: &bufdb_storage::entry::BufferEntry, data: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<()> {
         self.database.put(key, data)
     }
 
-    fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
+    fn get(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<Option<bufdb_storage::entry::BufferEntry>> {
         self.database.get(key)
     }
 
@@ -450,7 +450,7 @@ impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase<'a> {
         self.database.delete(key)
     }
 
-    fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_api::error::Result<bool> {
+    fn delete_exist(&self, key: &bufdb_storage::entry::BufferEntry) -> bufdb_lib::error::Result<bool> {
         let data = self.database.get(key)?;
         if data.is_some() {
             self.database.delete(key)?;
@@ -460,7 +460,7 @@ impl <'a> bufdb_storage::Database<'a, IDXCursor<'a>> for SecondaryDatabase<'a> {
         }
     }
 
-    fn open_cursor(&self) -> bufdb_api::error::Result<IDXCursor> {
+    fn open_cursor(&self) -> bufdb_lib::error::Result<IDXCursor> {
         Ok(IDXCursor::new(&self.parent, &self.database))
     }
 }

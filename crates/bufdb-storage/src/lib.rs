@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::path::PathBuf;
 
-use bufdb_api::error::Result;
+use bufdb_lib::error::Result;
 use entry::BufferEntry;
 use entry::Entry;
 

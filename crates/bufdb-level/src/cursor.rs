@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use bufdb_api::db_error_s;
-use bufdb_api::error::Result;
+use bufdb_lib::db_error_s;
+use bufdb_lib::error::Result;
 use bufdb_storage::PrimaryCursor;
 use bufdb_storage::SecondaryCursor;
 use bufdb_storage::entry::BufferEntry;
@@ -44,7 +44,7 @@ impl <'a> PKCursor<'a> {
 }
 
 impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
-    fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.iter.seek(key);
 
         if let Some((n_key, n_data)) = self.iter.next() {
@@ -60,13 +60,13 @@ impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
         }
     }
 
-    fn search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.iter.seek(key);
 
         self.next(Some(key), data)
     }
 
-    fn next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         if let Some((n_key, n_data)) = self.iter.next() {
             buf_to_buf!(n_key, key);
             vec_to_buf!(n_data, data);
@@ -77,11 +77,11 @@ impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
         }
     }
 
-    fn next_dup(&mut self, _key: Option<&mut bufdb_storage::entry::BufferEntry>, _data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn next_dup(&mut self, _key: Option<&mut bufdb_storage::entry::BufferEntry>, _data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         Ok(false)
     }
 
-    fn skip(&mut self, count: usize, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn skip(&mut self, count: usize, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         let mut count = count;
         while let Some((n_key, n_data)) = self.iter.next() {
             count -= 1;
@@ -214,29 +214,29 @@ impl <'a> IDXCursor<'a> {
 }
 
 impl <'a> PrimaryCursor<'a> for IDXCursor<'a> {
-    fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.s_search(key, data, None)
     }
 
-    fn search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.s_search_range(key, data, None)
     }
 
-    fn next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.s_next(key, data, None)
     }
 
-    fn next_dup(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn next_dup(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.s_next_dup(key, data, None)
     }
 
-    fn skip(&mut self, count: usize, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn skip(&mut self, count: usize, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.s_skip(count, key, data, None)
     }
 }
 
 impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
-    fn s_search(&mut self, key: &bufdb_storage::entry::BufferEntry, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn s_search(&mut self, key: &bufdb_storage::entry::BufferEntry, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.seek(key)?;
 
         if let Some((n_key, n_data)) = self.iter.next() {
@@ -252,13 +252,13 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
         }
     }
 
-    fn s_search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn s_search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         self.seek(key)?;
 
         self.s_next(Some(key), p_key, data)
     }
 
-    fn s_next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn s_next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         if let Some((n_key, n_data)) = self.iter.next() {
             buf_to_buf!(self.rekey(n_key), key);
             self.fetch(n_data, p_key, data)?;
@@ -268,7 +268,7 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
         }
     }
 
-    fn s_next_dup(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn s_next_dup(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         if let Some((n_key, n_data)) = self.to_next_dup()? {
             buf_to_buf!(self.rekey(n_key), key);
             self.fetch(n_data, p_key, data)?;
@@ -278,7 +278,7 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
         }
     }
 
-    fn s_skip(&mut self, count: usize, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> bufdb_api::error::Result<bool> {
+    fn s_skip(&mut self, count: usize, key: Option<&mut BufferEntry>, p_key: Option<&mut BufferEntry>, data: Option<&mut BufferEntry>) -> bufdb_lib::error::Result<bool> {
         let mut count = count;
         while let Some((n_key, n_data)) = self.iter.next() {
             count -= 1;

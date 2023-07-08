@@ -15,7 +15,7 @@ categories = []
 
 [dependencies]
 
-bufdb-api = { version = "0.0.1", path = "../bufdb-api" }
+bufdb-lib = { version = "0.0.1", path = "../bufdb-lib" }
 bufdb-storage = { version = "0.0.1", path = "../bufdb-storage" }
 leveldb = "0.8.6"
 leveldb-sys = "2.0.9"

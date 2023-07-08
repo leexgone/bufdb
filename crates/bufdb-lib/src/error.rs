@@ -190,13 +190,13 @@ impl std::error::Error for PhantomError {
 #[macro_export]
 macro_rules! db_error {
     (open => $err: expr) => {
-        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOpen(bufdb_api::error::PhantomError::from($err)))
+        bufdb_lib::error::Error::from(bufdb_lib::error::ErrorKind::DBOpen(bufdb_lib::error::PhantomError::from($err)))
     };
      (read => $err: expr) => {
-        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBRead(bufdb_api::error::PhantomError::from($err)))
+        bufdb_lib::error::Error::from(bufdb_lib::error::ErrorKind::DBRead(bufdb_lib::error::PhantomError::from($err)))
     };
     (write => $err: expr) => {
-        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBWrite(bufdb_api::error::PhantomError::from($err)))
+        bufdb_lib::error::Error::from(bufdb_lib::error::ErrorKind::DBWrite(bufdb_lib::error::PhantomError::from($err)))
     };
     (close => $err: expr) => {
         bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBClose(bufdb_api::error::PhantomError::from($err)))
@@ -212,7 +212,7 @@ macro_rules! db_error_s {
         bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBOpen(bufdb_api::error::PhantomError::from_str($err)))
     };
      (read => $err: literal) => {
-        bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBRead(bufdb_api::error::PhantomError::from_str($err)))
+        bufdb_lib::error::Error::from(bufdb_lib::error::ErrorKind::DBRead(bufdb_lib::error::PhantomError::from_str($err)))
     };
     (write => $err: literal) => {
         bufdb_api::error::Error::from(bufdb_api::error::ErrorKind::DBWrite(bufdb_api::error::PhantomError::from_str($err)))

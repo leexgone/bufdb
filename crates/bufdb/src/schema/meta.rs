@@ -1,6 +1,6 @@
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
-use bufdb_api::model::TableDefine;
+use bufdb_lib::error::ErrorKind;
+use bufdb_lib::error::Result;
+use bufdb_lib::model::TableDefine;
 use bufdb_storage::Database;
 use bufdb_storage::Environment;
 use bufdb_storage::StorageEngine;

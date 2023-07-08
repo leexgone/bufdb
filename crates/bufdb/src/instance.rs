@@ -3,10 +3,10 @@ use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
 use std::sync::Arc;
 
-use bufdb_api::config::InstanceConfig;
-use bufdb_api::config::SchemaConfig;
-use bufdb_api::error::ErrorKind;
-use bufdb_api::error::Result;
+use bufdb_lib::config::InstanceConfig;
+use bufdb_lib::config::SchemaConfig;
+use bufdb_lib::error::ErrorKind;
+use bufdb_lib::error::Result;
 use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::CachePool;
 

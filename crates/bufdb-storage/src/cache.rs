@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use bufdb_api::config::CacheConfig;
+use bufdb_lib::config::CacheConfig;
 use chrono::Local;
 
 pub fn now() -> i64 {
@@ -138,7 +138,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    use bufdb_api::config::CacheConfig;
+    use bufdb_lib::config::CacheConfig;
 
     use super::CachePool;
     use super::Poolable;

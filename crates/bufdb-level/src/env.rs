@@ -3,7 +3,7 @@ use std::fs::rename;
 use std::path::Path;
 use std::path::PathBuf;
 
-use bufdb_api::error::Result;
+use bufdb_lib::error::Result;
 use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
 use bufdb_storage::EnvironmentConfig;
@@ -62,29 +62,29 @@ impl <'a> Environment<'a> for LevelDBEnv {
         })
     }
 
-    fn create_database<C: KeyComparator>(&self, name: &str, config: DatabaseConfig<C>) -> bufdb_api::error::Result<Self::DATABASE> {
+    fn create_database<C: KeyComparator>(&self, name: &str, config: DatabaseConfig<C>) -> bufdb_lib::error::Result<Self::DATABASE> {
         let data_dir = self.get_data_dir(name);
 
         PrimaryDatabase::new(name, data_dir, config.readonly, config.temporary, config.comparator)
     }
 
-    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_api::error::Result<Self::SDATABASE> {
+    fn create_secondary_database<C: KeyComparator, G: KeyCreator + 'a>(&self, database: &Self::DATABASE, name: &str, config: SDatabaseConfig<C, G>) -> bufdb_lib::error::Result<Self::SDATABASE> {
         SecondaryDatabase::new(database, name, config)
     }
 
-    fn drop_database(&self, name: &str) -> bufdb_api::error::Result<()> {
+    fn drop_database(&self, name: &str) -> bufdb_lib::error::Result<()> {
         self.clear_database(name)
     }
 
-    fn drop_secondary_database(&self, name: &str) -> bufdb_api::error::Result<()> {
+    fn drop_secondary_database(&self, name: &str) -> bufdb_lib::error::Result<()> {
         self.clear_database(name)
     }
 
-    fn truncate_database(&self, name: &str) -> bufdb_api::error::Result<()> {
+    fn truncate_database(&self, name: &str) -> bufdb_lib::error::Result<()> {
         self.clear_database(name)
     }
 
-    fn rename_database(&self, raw_name: &str, new_name: &str) -> bufdb_api::error::Result<()> {
+    fn rename_database(&self, raw_name: &str, new_name: &str) -> bufdb_lib::error::Result<()> {
         let raw_dir = self.get_data_dir(raw_name);
         let new_dir = self.get_data_dir(new_name);
         rename(raw_dir, new_dir)?;

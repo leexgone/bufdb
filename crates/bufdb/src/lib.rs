@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use bufdb_api::config::InstanceConfig;
-use bufdb_api::error::Result;
+use bufdb_lib::config::InstanceConfig;
+use bufdb_lib::error::Result;
 use daemon::Daemon;
 use engine::DBEngine;
 use instance::InstImpl;
@@ -42,9 +42,9 @@ pub fn new_instance(config: InstanceConfig) -> Result<Instance> {
 
 #[cfg(test)]
 mod tests {
-    use bufdb_api::config::InstanceConfig;
-    use bufdb_api::config::SchemaConfig;
-    use bufdb_api::config::TableConfig;
+    use bufdb_lib::config::InstanceConfig;
+    use bufdb_lib::config::SchemaConfig;
+    use bufdb_lib::config::TableConfig;
 
     use crate::new_instance;
 

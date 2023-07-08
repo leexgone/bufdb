@@ -2,8 +2,8 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
 
-use bufdb_api::config::TableConfig;
-use bufdb_api::error::Result;
+use bufdb_lib::config::TableConfig;
+use bufdb_lib::error::Result;
 use bufdb_storage::Database;
 use bufdb_storage::DatabaseConfig;
 use bufdb_storage::Environment;
