@@ -1,3 +1,5 @@
+pub(crate) mod comparator;
+
 use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
@@ -12,7 +14,6 @@ use bufdb_storage::StorageEngine;
 use bufdb_storage::cache::Poolable;
 use bufdb_storage::cache::now;
 use bufdb_storage::get_timestamp;
-use bufdb_storage::io::Input;
 use bufdb_storage::io::Inputable;
 use bufdb_storage::io::Outputable;
 use bufdb_storage::set_timestamp;
@@ -71,32 +72,6 @@ impl <'a, T: StorageEngine<'a>> Poolable for TableImpl<'a, T> {
 
     fn touch(&self) {
         set_timestamp!(self.last_access)
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-pub(crate) struct StringKeyComparator {
-}
-
-impl KeyComparator for StringKeyComparator {
-    fn compare<T: bufdb_storage::entry::Entry>(&self, key1: &T, key2: &T) -> Result<std::cmp::Ordering> {
-        let v1 = key1.as_input().read_string()?;
-        let v2 = key2.as_input().read_string()?;
-
-        Ok(v1.cmp(&v2))
-        // if let Some(s1) = v1 {
-        //     if let Some(s2) = v2 {
-        //         Ok(s1.cmp(&s2))
-        //     } else {
-        //         Ok(std::cmp::Ordering::Greater)
-        //     }
-        // } else {
-        //     if v2.is_some() {
-        //         Ok(std::cmp::Ordering::Less)
-        //     } else {
-        //         Ok(std::cmp::Ordering::Equal)
-        //     }
-        // }
     }
 }
 

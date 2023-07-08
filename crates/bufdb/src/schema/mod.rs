@@ -25,8 +25,8 @@ use crate::daemon::Maintainable;
 use crate::engine::DBEngine;
 use crate::instance::InstImpl;
 use crate::table::KVTable;
-use crate::table::StringKeyComparator;
 use crate::table::TableImpl;
+use crate::table::comparator::StringKeyComparator;
 
 use self::meta::MetaStorage;
 
@@ -139,11 +139,9 @@ impl <'a, T: StorageEngine<'a>> SchemaImpl<'a, T> {
         self.tables.remove(name)
     }
 
-    // pub fn exists(&self, name: &str) -> Result<bool> {
-    //     let key = name.to_entry()?;
-    //     let data = self.meta.get(&key)?;
-    //     Ok(data.is_some())
-    // }
+    pub fn exists(&self, name: &str) -> Result<bool> {
+        self.meta.exists(name)
+    }
 }
 
 unsafe impl <'a, T: StorageEngine<'a>> Send for SchemaImpl<'a, T> {}
@@ -207,6 +205,10 @@ impl Schema {
     pub fn open_kv_table(&self, name: &str, config: TableConfig) -> Result<KVTable> {
         let table = self.schema.open_kv_table(name, config)?;
         Ok(KVTable::new(self.schema.clone(), table))
+    }
+
+    pub fn exists(&self, name: &str) -> Result<bool> {
+        self.schema.exists(name)
     }
 }
 
