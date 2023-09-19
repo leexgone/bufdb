@@ -7,3 +7,5 @@ members = [
     "crates/bufdb", 
     "samples/leveldb-test"
 ]
+
+resolver = "2"
