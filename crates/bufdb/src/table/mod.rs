@@ -26,6 +26,7 @@ pub(crate) struct TableImpl<'a, T: StorageEngine<'a>> {
     name: String,
     config: TableConfig,
     db: <<T as StorageEngine<'a>>::ENVIRONMENT as Environment<'a>>::DATABASE,
+    sdbs: Vec<<<T as StorageEngine<'a>>::ENVIRONMENT as Environment<'a>>::SDATABASE>,
     last_access: AtomicI64,
 }
 
@@ -43,7 +44,8 @@ impl <'a, T: StorageEngine<'a>> TableImpl<'a, T> {
         Ok(Self { 
             name, 
             config, 
-            db, 
+            db,
+            sdbs: Vec::new(),
             last_access: AtomicI64::new(now()) 
         })
     }
