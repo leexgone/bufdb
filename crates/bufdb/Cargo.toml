@@ -17,7 +17,7 @@ leveldb = ["bufdb-level"]
 
 [dependencies]
 
-chrono = "0.4.26"
+chrono = "0.4.31"
 bufdb-lib = { version = "0.0.1", path = "../bufdb-lib" }
 bufdb-storage = { version = "0.0.1", path = "../bufdb-storage" }
 bufdb-level = { version = "0.0.1", optional = true, path = "../bufdb-level" }
