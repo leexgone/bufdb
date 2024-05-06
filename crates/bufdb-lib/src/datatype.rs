@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::fmt::Write;
 use std::str::FromStr;
 
+use chrono::DateTime;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::NaiveTime;
@@ -65,20 +66,22 @@ impl From<i64> for TimeStamp {
 
 impl Into<NaiveDateTime> for TimeStamp {
     fn into(self) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp_millis(self.0).unwrap()
+        // NaiveDateTime::from_timestamp_millis(self.0).unwrap()
+        DateTime::from_timestamp_millis(self.0).unwrap().naive_utc()
     }
 }
 
 impl From<NaiveDateTime> for TimeStamp {
     fn from(value: NaiveDateTime) -> Self {
-        Self(value.timestamp_millis())
+        // Self(value.timestamp_millis())
+        Self(value.and_utc().timestamp_millis())
     }
 }
 
 impl Display for TimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(dt) = NaiveDateTime::from_timestamp_millis(self.0) {
-            write!(f, "{}", dt)
+        if let Some(dt) = DateTime::from_timestamp_millis(self.0) { //NaiveDateTime::from_timestamp_millis(self.0) {
+            write!(f, "{}", dt.naive_utc())
         } else {
             Err(std::fmt::Error {})
         }
