@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -11,6 +12,7 @@ use bufdb_storage::KeyCreator;
 use bufdb_storage::SDatabaseConfig;
 use bufdb_storage::entry::BufferEntry;
 use bufdb_storage::entry::Entry;
+use db_key::Key;
 use leveldb::database::Database;
 use leveldb::iterator::Iterable;
 use leveldb::iterator::Iterator;
@@ -30,6 +32,93 @@ use crate::suffix::append_suffix;
 use crate::suffix::reset_suffix;
 use crate::suffix::unwrap_suffix;
 
+pub struct KeyBuffer(BufferEntry);
+
+impl Key for KeyBuffer {
+    fn from_u8(key: &[u8]) -> Self {
+        let data = Vec::from(key);
+        Self(data.into())
+    }
+
+    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+        f(self.0.slice())
+    }
+}
+
+impl Entry for KeyBuffer {
+    fn off(&self) -> usize {
+        self.0.off()
+    }
+    
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    
+    fn size(&self) -> usize {
+        self.0.size()
+    }
+    
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    fn slice(&self) -> &[u8] {
+        self.0.slice()
+    }
+
+    fn as_input(&self) -> bufdb_storage::io::BufferInput {
+        self.0.as_input()
+    }
+
+    fn left(&self, n: usize) -> Result<bufdb_storage::entry::SliceEntry> {
+        self.0.left(n)
+    }
+}
+
+impl AsRef<[u8]> for KeyBuffer {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl From<BufferEntry> for KeyBuffer {
+    fn from(value: BufferEntry) -> Self {
+        Self(value)
+    }
+}
+
+impl Into<BufferEntry> for KeyBuffer {
+    fn into(self) -> BufferEntry {
+        self.0
+    }
+}
+
+impl AsRef<BufferEntry> for KeyBuffer {
+    fn as_ref(&self) -> &BufferEntry {
+        &self.0
+    }
+}
+
+impl Borrow<BufferEntry> for KeyBuffer {
+    fn borrow(&self) -> &BufferEntry {
+        &self.0
+    }
+}
+
+macro_rules! as_key {
+    ($buffer: expr) => {
+        unsafe { std::mem::transmute::<&BufferEntry, &KeyBuffer>($buffer) }
+    };
+}
+
+// impl <'a> From<&'a BufferEntry> for &'a KeyBuffer {
+//     fn from(value: &BufferEntry) -> Self {
+//         unsafe {
+//             std::mem::transmute(value)
+//         }
+//     }
+// }
+
 // #[macro_export]
 macro_rules! read_options {
     () => {
@@ -46,7 +135,7 @@ pub(crate) struct DBImpl{
     readonly: bool,
     temporary: bool,
     unique: bool,
-    db: Database<BufferEntry>
+    db: Database<KeyBuffer>
 }
 
 impl DBImpl {
@@ -91,26 +180,27 @@ impl DBImpl {
     }
 
     pub fn put(&self, key: &BufferEntry, data: &BufferEntry) -> Result<()> {
-        self.db.put(WriteOptions::new(), key, data.slice())
+        // let key = unsafe { std::mem::transmute::<&BufferEntry, &KeyBuffer>(key) };
+        self.db.put(WriteOptions::new(), as_key!(key), data.slice())
             .map_err(|e| db_error!(write => e))
     }
 
     pub fn get(&self, key: &BufferEntry) -> Result<Option<BufferEntry>> {
-        self.db.get(ReadOptions::new(), key)
+        self.db.get(ReadOptions::new(), as_key!(key))
             .map(|data| data.map(|d| d.into()))
             .map_err(|e| db_error!(read => e))
     }
 
     pub fn delete(&self, key: &BufferEntry) -> Result<()> {
-        self.db.delete(WriteOptions::new(), key)
+        self.db.delete(WriteOptions::new(), as_key!(key))
             .map_err(|e| db_error!(write => e))
     }
 
-    pub fn iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> Iterator<'a, BufferEntry> {
+    pub fn iter<'a>(&'a self, options: ReadOptions<'a, KeyBuffer>) -> Iterator<'a, KeyBuffer> {
         self.db.iter(options)
     }
 
-    fn key_iter<'a>(&'a self, options: ReadOptions<'a, BufferEntry>) -> KeyIterator<'a, BufferEntry> {
+    fn key_iter<'a>(&'a self, options: ReadOptions<'a, KeyBuffer>) -> KeyIterator<'a, KeyBuffer> {
         self.db.keys_iter(options)
     }
 }
@@ -176,8 +266,8 @@ impl <'a> IndexListener<'a> {
     fn init_pk(&self, pdb: &Arc<DBImpl>) -> Result<()> {
         for (key, data) in pdb.iter(read_options!(quick)) {
             let data = BufferEntry::from(data);
-            if let Some(skey) = self.creator.create_key(&key, &data)? {
-                self.idb.put(&skey, &key)?;
+            if let Some(skey) = self.creator.create_key(key.as_ref(), &data)? {
+                self.idb.put(&skey, key.as_ref())?;
             }
         }
 
@@ -189,10 +279,10 @@ impl <'a> IndexListener<'a> {
 
         for (key, data) in pdb.iter(read_options!(quick)) {
             let data = BufferEntry::from(data);
-            if let Some(skey) = self.creator.create_key(&key, &data)? {
+            if let Some(skey) = self.creator.create_key(key.as_ref(), &data)? {
                 id += 1;
                 let skey = append_suffix(skey, id)?;
-                self.idb.put(&skey, &key)?;
+                self.idb.put(&skey, key.as_ref())?;
             }
         };
 
@@ -219,7 +309,7 @@ impl <'a> IndexListener<'a> {
             let s_slice = skey.left(len)?;
 
             let order = {
-                let mut iter = self.idb.key_iter(read_options!()).from(&skey);
+                let mut iter = self.idb.key_iter(read_options!()).from(as_key!(&skey));
                 if let Some(n_skey) = iter.next() {
                     let (n_slice, n) = unwrap_suffix(&n_skey)?;
                     if s_slice == n_slice {
@@ -260,7 +350,7 @@ impl <'a> IndexListener<'a> {
 
             let mut found: Option<BufferEntry> = None;
             let mut order = u32::MAX;
-            for (n_key, n_data) in self.idb.iter(read_options!()).from(&skey) {
+            for (n_key, n_data) in self.idb.iter(read_options!()).from(as_key!(&skey)) {
                 let (n_slice, n) = unwrap_suffix(&n_key)?;
                 if n >= order || slice != n_slice {
                     break;
@@ -268,7 +358,7 @@ impl <'a> IndexListener<'a> {
 
                 let n_data = BufferEntry::from(n_data);
                 if *key == n_data {
-                    found = Some(n_key);
+                    found = Some(n_key.into());
                     break;
                 }
 

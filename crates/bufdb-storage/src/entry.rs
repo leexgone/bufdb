@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use bufdb_lib::error::ErrorKind;
 use bufdb_lib::error::Result;
-use db_key::Key;
+// use db_key::Key;
 
 use crate::io::BufferInput;
 use crate::io::BufferOutput;
@@ -168,16 +168,16 @@ impl Into<BufferOutput> for BufferEntry {
     }
 }
 
-impl Key for BufferEntry {
-    fn from_u8(key: &[u8]) -> Self {
-        let data = Vec::from(key);
-        data.into()
-    }
+// impl Key for BufferEntry {
+//     fn from_u8(key: &[u8]) -> Self {
+//         let data = Vec::from(key);
+//         data.into()
+//     }
 
-    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
-        f(self.slice())
-    }
-}
+//     fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
+//         f(self.slice())
+//     }
+// }
 
 impl PartialEq for BufferEntry {
     fn eq(&self, other: &Self) -> bool {

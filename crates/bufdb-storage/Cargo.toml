@@ -17,4 +17,4 @@ categories = []
 
 bufdb-lib = { version = "0.0.1", path = "../bufdb-lib" }
 chrono = "0.4.38"
-db-key = "0.0.5"
+# db-key = "0.0.5"

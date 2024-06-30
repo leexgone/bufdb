@@ -1,16 +1,16 @@
 use std::cmp::Ordering;
 
 use bufdb_storage::KeyComparator;
-use bufdb_storage::entry::BufferEntry;
 use leveldb::comparator::Comparator;
 use libc::c_char;
 
+use crate::database::KeyBuffer;
 use crate::suffix::unwrap_suffix;
 
 pub struct PKComparator<C: KeyComparator>(C);
 
 impl <C: KeyComparator> Comparator for PKComparator<C> {
-    type K = BufferEntry;
+    type K = KeyBuffer;
 
     fn name(&self) -> *const c_char {
         "PK-Comparator".as_ptr() as *const c_char
@@ -36,7 +36,7 @@ impl <T: KeyComparator> AsRef<T> for PKComparator<T> {
 pub struct IDXComparator<C: KeyComparator>(C);
 
 impl <C: KeyComparator> Comparator for IDXComparator<C> {
-    type K = BufferEntry;
+    type K = KeyBuffer;
 
     fn name(&self) -> *const c_char {
         "IDX-Comparator".as_ptr() as *const c_char

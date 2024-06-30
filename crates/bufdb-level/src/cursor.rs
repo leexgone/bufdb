@@ -10,6 +10,7 @@ use leveldb::iterator::Iterator;
 use leveldb::iterator::LevelDBIterator;
 
 use crate::database::DBImpl;
+use crate::database::KeyBuffer;
 use crate::suffix::append_suffix;
 use crate::suffix::size_of_suffix;
 use crate::suffix::trucate_suffix;
@@ -31,7 +32,7 @@ macro_rules! buf_to_buf {
 }
 
 pub struct PKCursor<'a> {
-    iter: Iterator<'a, BufferEntry>
+    iter: Iterator<'a, KeyBuffer>
 }
 
 impl <'a> PKCursor<'a> {
@@ -45,10 +46,10 @@ impl <'a> PKCursor<'a> {
 
 impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
     fn search(&mut self, key: &bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
-        self.iter.seek(key);
+        self.iter.seek(as_key!(key));
 
         if let Some((n_key, n_data)) = self.iter.next() {
-            if *key == n_key {
+            if key == n_key.as_ref() {
                 vec_to_buf!(n_data, data);
 
                 Ok(true)
@@ -61,14 +62,14 @@ impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
     }
 
     fn search_range(&mut self, key: &mut bufdb_storage::entry::BufferEntry, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
-        self.iter.seek(key);
+        self.iter.seek(as_key!(key));
 
         self.next(Some(key), data)
     }
 
     fn next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         if let Some((n_key, n_data)) = self.iter.next() {
-            buf_to_buf!(n_key, key);
+            buf_to_buf!(n_key.into(), key);
             vec_to_buf!(n_data, data);
 
             Ok(true)
@@ -86,7 +87,7 @@ impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
         while let Some((n_key, n_data)) = self.iter.next() {
             count -= 1;
             if count == 0 {
-                buf_to_buf!(n_key, key);
+                buf_to_buf!(n_key.into(), key);
                 vec_to_buf!(n_data, data);
 
                 return Ok(true);
@@ -99,7 +100,7 @@ impl <'a> PrimaryCursor<'a> for PKCursor<'a> {
 
 pub struct IDXCursor<'a> {
     db: Arc<DBImpl>,
-    iter: Iterator<'a, BufferEntry>,
+    iter: Iterator<'a, KeyBuffer>,
     do_seek: fn (&mut Self, &BufferEntry) -> Result<()>,
     do_match: fn (&BufferEntry, &BufferEntry) -> Result<bool>,
     do_rekey: fn (&mut BufferEntry),
@@ -125,13 +126,13 @@ impl <'a> IDXCursor<'a> {
     }
 
     fn seek_unique(&mut self, key: &BufferEntry) -> Result<()> {
-        self.iter.seek(key);
+        self.iter.seek(as_key!(key));
         Ok(())
     }
 
     fn seek_non_unique(&mut self, key: &BufferEntry) -> Result<()> {
         let skey = append_suffix(key.clone(), 0)?;
-        self.iter.seek(&skey);
+        self.iter.seek(as_key!(&skey));
         Ok(())
     }
 
@@ -180,7 +181,7 @@ impl <'a> IDXCursor<'a> {
             let prev = trucate_suffix(&key)?;
             let cur = trucate_suffix(&n_key)?;
             if prev == cur {
-                Ok(Some((n_key, n_data)))
+                Ok(Some((n_key.into(), n_data)))
             } else {
                 Ok(None)
             }
@@ -240,7 +241,7 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
         self.seek(key)?;
 
         if let Some((n_key, n_data)) = self.iter.next() {
-            if self.match_key(key, &n_key)? {
+            if self.match_key(key, n_key.as_ref())? {
                 self.fetch(n_data, p_key, data)?;
                 
                 Ok(true)
@@ -260,7 +261,7 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
 
     fn s_next(&mut self, key: Option<&mut bufdb_storage::entry::BufferEntry>, p_key: Option<&mut bufdb_storage::entry::BufferEntry>, data: Option<&mut bufdb_storage::entry::BufferEntry>) -> bufdb_lib::error::Result<bool> {
         if let Some((n_key, n_data)) = self.iter.next() {
-            buf_to_buf!(self.rekey(n_key), key);
+            buf_to_buf!(self.rekey(n_key.into()), key);
             self.fetch(n_data, p_key, data)?;
             Ok(true)
         } else {
@@ -283,7 +284,7 @@ impl <'a> SecondaryCursor<'a> for IDXCursor<'a> {
         while let Some((n_key, n_data)) = self.iter.next() {
             count -= 1;
             if count == 0 {
-                buf_to_buf!(self.rekey(n_key), key);
+                buf_to_buf!(self.rekey(n_key.into()), key);
                 self.fetch(n_data, p_key, data)?;
                 return Ok(true);
             }
