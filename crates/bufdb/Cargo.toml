@@ -25,4 +25,4 @@ bufdb-level = { version = "0.0.1", optional = true, path = "../bufdb-level" }
 
 [dev-dependencies]
 
-tempdir = "0.3.7"
+tempdir = "0.3.6"

@@ -13,8 +13,8 @@ categories = []
 
 [dependencies]
 
-failure = "0.1.8"
+failure = "0.1.7"
 strum = { version = "0.26.3", features = ["derive"] }
-serde_json = "1.0.118"
-serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.122"
+serde = { version = "1.0.206", features = ["derive"] }
 chrono = "0.4.38"
